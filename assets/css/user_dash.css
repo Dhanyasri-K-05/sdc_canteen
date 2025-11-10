@@ -1,0 +1,362 @@
+/* ===== Reset & Base ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #f0ece5;
+  color: #1f1f1f;
+  line-height: 1.6;
+}
+
+/* ===== Navbar ===== */
+/* User / Wallet Info Box */
+.navbar-text {
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 1rem; /* more padding for box */
+    border-radius: 9999px; /* fully rounded */
+    background-color: rgba(255, 255, 255, 0.15); /* translucent box */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* subtle shadow */
+    border: 1px solid rgba(255,255,255,0.3); /* light border */
+    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.navbar-text:hover {
+    transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+
+/* Individual Nav Links Box */
+.navbar .nav-link {
+    color: #fff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px; /* slightly rounded box */
+    transition: all 0.3s ease;
+    background-color: rgba(255,255,255,0.1); /* subtle background for box */
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+    background-color: rgba(255,255,255,0.25); /* highlight on hover */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+
+.btn-outline-light {
+  border: 1px solid #fff;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  background: transparent;
+  transition: all 0.3s;
+}
+
+.btn-outline-light:hover {
+  background: #fff;
+  color: #e63946;
+}
+
+/* ===== Container & Grid ===== */
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 1rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -0.5rem;
+}
+
+.col-md-8,
+.col-md-4,
+.col-md-6 {
+  padding: 0.5rem;
+}
+
+.col-md-8 { flex: 0 0 66%; }
+.col-md-4 { flex: 0 0 33%; }
+.col-md-6 { flex: 0 0 50%; }
+
+@media (max-width: 768px) {
+  .col-md-8, .col-md-4, .col-md-6 {
+    flex: 0 0 100%;
+  }
+}
+
+/* ===== Cards ===== */
+.card {
+  background: #fff4e6; /* matches navbar colors */
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  background: #e63946;
+  color: #fff;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.card-body {
+  padding: 1rem;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+  color: #f77f00;
+}
+
+.card-text {
+  margin-bottom: 0.6rem;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #e63946, #f77f00);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: linear-gradient(90deg, #f77f00, #ffdd00);
+  color: #fff;
+}
+
+.btn-warning {
+  background: #facc15;
+  color: #1f1f1f;
+}
+
+.btn-outline-danger {
+  border: 1px solid #e63946;
+  background: transparent;
+  color: #e63946;
+}
+
+.btn-outline-danger:hover {
+  background: #e63946;
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  border: 1px solid #666;
+  background: transparent;
+  color: #333;
+}
+
+.btn-outline-secondary:hover {
+  background: #666;
+  color: #fff;
+}
+
+.btn-sm { font-size: 0.85rem; padding: 0.3rem 0.6rem; }
+
+/* ===== Alerts ===== */
+.alert {
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.alert-success { background: #e6f9f1; color: #2a9d8f; }
+.alert-danger { background: #ffe6e6; color: #e63946; }
+.alert-info { background: #fffbe6; color: #f77f00; }
+
+/* ===== Number Inputs & Quantity ===== */
+/* ===== Number Inputs & Quantity ===== */
+input[type="number"] {
+  width: 80px;
+  padding: 0.4rem 0.5rem;
+  border: 2px solid #f77f00;
+  border-radius: 6px;
+  background-color: #fff4e6;
+  color: #e63946;
+  font-weight: 600;
+  text-align: center;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+/* Chrome, Edge, Safari: style spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button !important;
+  margin: 0;
+  background: transparent; 
+  opacity: 1 !important;
+  display: block !important;
+  background: linear-gradient(to bottom, #f77f00, #e63946); /* gradient arrow bg */
+  border-radius: 3px;
+  width: 16px;
+  height: 20px;
+  cursor: pointer;
+}
+
+
+/* Firefox: always show spinners */
+input[type="number"] {
+  -moz-appearance: number-input;
+}
+
+/* Focus effect */
+input[type="number"]:focus {
+  border-color: #e63946;
+  background-color: #fff0e6;
+  outline: none;
+}
+
+.cart-quantity-btn {
+  background: #f77f00;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cart-quantity-btn:hover {
+  background: #e63946;
+  transform: translateY(-1px);
+}
+
+/* ===== Modal ===== */
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.modal-dialog {
+  max-width: 500px;
+  width: 100%;
+}
+
+.modal-content {
+  background: #fff4e6;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.modal-header, .modal-footer {
+  padding: 0.8rem 1rem;
+  background: #ffe6cc;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* ===== Payment Options ===== */
+.payment-option {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 1rem;
+  background: #fff4e6;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+
+.payment-option:hover {
+  border-color: #e63946;
+  transform: translateY(-2px);
+}
+
+#confirmPaymentBtn {
+  background: linear-gradient(90deg, #e63946, #f77f00);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+}
+
+#confirmPaymentBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Typography & Utility ===== */
+.text-muted { color: #777; }
+.text-center { text-align: center; }
+.text-capitalize { text-transform: capitalize; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.mt-4 { margin-top: 1.5rem; }
+.ms-1 { margin-left: 0.25rem; }
+.ms-2 { margin-left: 0.5rem; }
+.ms-3 { margin-left: 1rem; }
+.me-1 { margin-right: 0.25rem; }
+.me-2 { margin-right: 0.5rem; }
+.me-3 { margin-right: 1rem; }
+
+.d-flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.d-grid { display: grid; }
+.gap-2 { gap: 0.5rem; }
+.bg-red-500 { background-color: #ef4444 !important; }
+.bg-orange-200 { background-color: #fed7aa !important; }
+
