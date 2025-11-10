@@ -46,8 +46,8 @@ if ($_POST && isset($_POST['payment_method'])) {
 
             
             // Create order
-            $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'wallet');
-            
+          $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'wallet', $cart);
+
             // Add order items
             foreach ($cart as $item) {
                 $order->addOrderItem($order_id, $item['id'], $item['quantity'], $item['price']);
