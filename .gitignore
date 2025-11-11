@@ -1,0 +1,2 @@
+# Ignore generated barcode images
+user/assets/barcode/*.png

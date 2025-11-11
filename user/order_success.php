@@ -137,15 +137,20 @@ $order_items = $order->getOrderItems($_GET['order_id']);
 
                         <hr>
 
-                        <!-- QR Code -->
+                        <!-- Barcode Section -->
                         <div class="text-center">
-                            <h6>Scan Barcode Code for Bill Details</h6>
-                            <?php if ($barcode_path): ?>
-                                <img src="<?php echo $barcode_path; ?>" alt="Barcode Code" class="img-fluid" style="max-width: 400px;">
+                            <?php if ($order_details['is_scanned'] == 0): ?>
+                                <h6>Scan Barcode for Bill Verification</h6>
+                                <?php if ($barcode_path): ?>
+                                    <img src="<?php echo $barcode_path; ?>" alt="Order Barcode" class="img-fluid" style="max-width: 400px;">
+                                <?php else: ?>
+                                    <p class="text-muted">Barcode generation failed</p>
+                                <?php endif; ?>
                             <?php else: ?>
-                                <p class="text-muted">Barcode Code generation failed</p>
+                                <h6 class="text-muted">✅ Order already scanned</h6>
                             <?php endif; ?>
                         </div>
+
 
                         <div class="text-center mt-3">
                             <small class="text-muted">Thank you for choosing our service!</small>

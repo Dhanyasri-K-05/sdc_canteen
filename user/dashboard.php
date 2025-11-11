@@ -506,6 +506,14 @@ $recent_orders = $order->getUserOrders($_SESSION['user_id']);
                 ?>
 
                 <!-- Recent Orders -->
+                 <?php
+                // Filter only orders created within the last 24 hours
+                $recent_orders = array_filter($recent_orders, function($order) {
+                    $created_at = strtotime($order['created_at']);
+                    $now = time();
+                    return ($now - $created_at) <= 86400;
+                });
+                ?>
                 <div class="card mt-4">
                     <div class="card-header">
                         <h6><i class="fas fa-history"></i> Recent Orders</h6>
@@ -515,18 +523,19 @@ $recent_orders = $order->getUserOrders($_SESSION['user_id']);
                             <p class="text-muted">No orders yet</p>
                         <?php else: ?>
                             <?php foreach (array_slice($recent_orders, 0, 5) as $recent_order): ?>
-                                <div class="mb-2">
-                                    <small>
-                                        <strong><?php echo $recent_order['bill_number']; ?></strong><br>
-                                        ₹<?php echo number_format($recent_order['total_amount'], 2); ?> - 
-                                        <span class="badge bg-<?php echo $recent_order['payment_status'] == 'completed' ? 'success' : 'warning'; ?>">
-                                            <?php echo ucfirst($recent_order['payment_status']); ?>
-                                        </span><br>
-                                        <?php echo date('d/m/Y H:i', strtotime($recent_order['created_at'])); ?>
-                                    </small>
-                                </div>
-                                <hr>
-                            <?php endforeach; ?>
+    <a href="order_success.php?order_id=<?php echo $recent_order['id']; ?>" class="text-decoration-none text-dark">
+        <div class="mb-2 p-2 border rounded hover-shadow" style="transition: 0.2s;">
+            <small>
+                <strong><?php echo $recent_order['bill_number']; ?></strong><br>
+                ₹<?php echo number_format($recent_order['total_amount'], 2); ?> - 
+                <span class="badge bg-<?php echo $recent_order['payment_status'] == 'completed' ? 'success' : 'warning'; ?>">
+                    <?php echo ucfirst($recent_order['payment_status']); ?>
+                </span><br>
+                <?php echo date('d/m/Y H:i', strtotime($recent_order['created_at'])); ?>
+            </small>
+        </div>
+    </a>
+<?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                 </div>
