@@ -4,56 +4,16 @@ require_once '../config/database.php';
 
 requireRole('user','staff');
 // Database connection
-$database = new Database();
-$db = $database->getConnection();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+$base = new Database();
+$baseie = $database->basic();
 
 // Fetch all active items
-$query = "SELECT * FROM food_items WHERE is_active = 1 ORDER BY category, name";
+$query = "SELECT * FROM items WHERE is_active = 1 ORDER BY category, name";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $all_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Group items by category
-$items_by_category = [];
-foreach ($all_items as $item) {
-    $items_by_category[$item['category']][] = $item;
-}
 
 $current_page = basename($_SERVER['PHP_SELF']); // gets current file name
 ?>
