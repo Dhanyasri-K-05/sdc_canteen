@@ -5,6 +5,20 @@ require_once '../classes/Order.php';
 require_once '../classes/BarcodeGenerator.php';
 
 requireRole('user','staff');
+$from_recent = isset($_GET['from']) && $_GET['from'] === 'recent';
+
+// ✅ Allow access if either:
+//  - Coming from a verified payment (session flag set), or
+//  - Coming from the dashboard’s recent orders link
+if (!$from_recent && (!isset($_SESSION['order_success']) || $_SESSION['order_success'] !== true)) {
+    header('Location: dashboard.php');
+    exit();
+}
+
+// If came from payment, clear the flag to prevent re-entry
+if (!$from_recent) {
+    unset($_SESSION['order_success']);
+}
 
 if (!isset($_GET['order_id'])) {
     header('Location: dashboard.php');
@@ -30,12 +44,20 @@ if (!$order_details || $order_details['user_id'] != $_SESSION['user_id']) {
     'customer' => $_SESSION['roll_no']
 ]); */
 
+// ✅ Check payment status before generating barcode
 $bill_data = $order_details['bill_number'];
+$query = "SELECT payment_status FROM orders WHERE bill_number = :bill_number";
+$stmt = $db->prepare($query);
+$stmt->execute([':bill_number' => $bill_data]);
+$payment = $stmt->fetch(PDO::FETCH_ASSOC);
 
+$barcode_path = null;
 
-$barcode_filename = 'bill_' . $order_details['bill_number'];
-$barcode_path = BarcodeGeneratorClass::generateBarcode($bill_data, $barcode_filename);
-// echo "$barcode_path";
+// ✅ Only generate barcode if payment is completed
+if ($payment && $payment['payment_status'] === 'completed') {
+    $barcode_filename = 'bill_' . $order_details['bill_number'];
+    $barcode_path = BarcodeGeneratorClass::generateBarcode($bill_data, $barcode_filename);
+}
 
 // Get order items
 $order_items = $order->getOrderItems($_GET['order_id']);
@@ -137,19 +159,24 @@ $order_items = $order->getOrderItems($_GET['order_id']);
 
                         <hr>
 
-                        <!-- Barcode Section -->
-                        <div class="text-center">
-                            <?php if ($order_details['is_scanned'] == 0): ?>
-                                <h6>Scan Barcode for Bill Verification</h6>
-                                <?php if ($barcode_path): ?>
-                                    <img src="<?php echo $barcode_path; ?>" alt="Order Barcode" class="img-fluid" style="max-width: 400px;">
+                        <!-- ✅ Barcode Section -->
+                            <div class="text-center">
+                                <?php if ($order_details['is_scanned'] == 0): ?>
+                                    <?php if ($payment && $payment['payment_status'] === 'completed'): ?>
+                                        <h6>Scan Barcode for Bill Verification</h6>
+                                        <?php if ($barcode_path): ?>
+                                            <img src="<?php echo $barcode_path; ?>" alt="Order Barcode" class="img-fluid" style="max-width: 400px;">
+                                        <?php else: ?>
+                                            <p class="text-muted">Barcode generation failed</p>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <h6 class="text-warning">⚠ Payment not completed yet</h6>
+                                        <p class="text-muted">Barcode will be available after payment confirmation.</p>
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                    <p class="text-muted">Barcode generation failed</p>
+                                    <h6 class="text-muted">✅ Order already scanned</h6>
                                 <?php endif; ?>
-                            <?php else: ?>
-                                <h6 class="text-muted">✅ Order already scanned</h6>
-                            <?php endif; ?>
-                        </div>
+                            </div>
 
 
                         <div class="text-center mt-3">
@@ -209,6 +236,12 @@ $order_items = $order->getOrderItems($_GET['order_id']);
                 newWindow.print();
             }, 500);
         } */
+        
+        window.history.pushState(null, "", window.location.href);
+        window.onpopstate = function () {
+            window.location.replace("dashboard.php");
+        };
+    
     </script>
 </body>
 </html>

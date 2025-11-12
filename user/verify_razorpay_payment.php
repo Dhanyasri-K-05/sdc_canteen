@@ -47,6 +47,8 @@ try {
     $order->updateRazorpayDetails($order_id, $razorpay_order_id, $payment_id);
     $order->updatePaymentStatus($order_id, 'completed');
     
+    $_SESSION['order_success'] = true;
+
     // Clear session data
     unset($_SESSION['cart']);
     unset($_SESSION['pending_order']);

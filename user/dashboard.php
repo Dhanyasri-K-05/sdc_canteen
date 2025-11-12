@@ -4,7 +4,9 @@ require_once(__DIR__ . '/../config/database.php');
 require_once '../classes/FoodItem.php';
 require_once '../classes/Order.php';
 require_once '../classes/User.php';
-
+if (isset($_SESSION['order_success'])) {
+    unset($_SESSION['order_success']);
+}
 
  //$timeout_duration = 60;
 
@@ -523,8 +525,8 @@ $recent_orders = $order->getUserOrders($_SESSION['user_id']);
                             <p class="text-muted">No orders yet</p>
                         <?php else: ?>
                             <?php foreach (array_slice($recent_orders, 0, 5) as $recent_order): ?>
-    <a href="order_success.php?order_id=<?php echo $recent_order['id']; ?>" class="text-decoration-none text-dark">
-        <div class="mb-2 p-2 border rounded hover-shadow" style="transition: 0.2s;">
+                                <a href="order_success.php?order_id=<?php echo $recent_order['id']; ?>&from=recent" class="text-decoration-none text-dark">
+           <div class="mb-2 p-2 border rounded hover-shadow" style="transition: 0.2s;">
             <small>
                 <strong><?php echo $recent_order['bill_number']; ?></strong><br>
                 ₹<?php echo number_format($recent_order['total_amount'], 2); ?> - 
@@ -661,50 +663,11 @@ document.addEventListener("click", resetActivity);
 document.addEventListener("keydown", resetActivity);
 document.addEventListener("touchstart", resetActivity);
 document.addEventListener("mousemove", resetActivity);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+window.history.pushState(null, "", window.location.href);
+    window.onpopstate = function () {
+        // User pressed Back or Forward → reload dashboard cleanly
+        window.location.replace("dashboard.php");
+    };
     </script>
-</body>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+</body>    
 </html>
