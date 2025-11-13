@@ -7,42 +7,6 @@ requireRole('user','staff');
 $database = new Database();
 $db = $database->getConnection();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Fetch all active items
 $query = "SELECT * FROM food_items WHERE is_active = 1 ORDER BY category, name";
 $stmt = $db->prepare($query);
@@ -106,7 +70,6 @@ $current_page = basename($_SERVER['PHP_SELF']); // gets current file name
                     <a href="wallet.php" class="navbar-text me-3 text-decoration-none">
                     <i class="fas fa-wallet"></i> ₹<?php echo number_format($_SESSION['wallet_balance'], 2); ?>
                     </a>
-                    <p></p>
                     <a class="btn btn-outline-light btn-sm" href="../logout.php">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
