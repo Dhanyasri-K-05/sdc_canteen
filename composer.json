@@ -1,18 +1,20 @@
 {
-    "name": "food-ordering-system/razorpay-integration",
-    "description": "Food Ordering System with Razorpay Payment Integration",
-    "type": "project",
-    "require": {
-        "php": ">=7.4",
-        "razorpay/razorpay": "^2.9",
-        "picqer/php-barcode-generator": "^3.2"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "classes/"
-        }
-    },
-    "config": {
-        "optimize-autoloader": true
+  "name": "food-ordering-system/razorpay-integration",
+  "description": "Food Ordering System with Razorpay Payment Integration",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "razorpay/razorpay": "^2.9",
+    "picqer/php-barcode-generator": "^3.2",
+    "mike42/escpos-php": "^2.2",
+    "phpoffice/phpspreadsheet": "^5.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "classes/"
     }
+  },
+  "config": {
+    "optimize-autoloader": true
+  }
 }

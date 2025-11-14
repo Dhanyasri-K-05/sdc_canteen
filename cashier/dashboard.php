@@ -18,25 +18,25 @@ $error_message = '';
 if ($_POST) {
 
 
-// morning balance getting function
+    // morning balance getting function
 
- if (isset($_POST['balance'])) {
-    $balance = intval($_POST['balance']);
+    if (isset($_POST['balance'])) {
+        $balance = intval($_POST['balance']);
 
-    // Prepare PDO statement
-    $stmt = $db->prepare("INSERT INTO morning_balance (balance) VALUES (:balance)");
+        // Prepare PDO statement
+        $stmt = $db->prepare("INSERT INTO morning_balance (balance) VALUES (:balance)");
 
-    // Bind value
-    $stmt->bindValue(':balance', $balance, PDO::PARAM_INT);
+        // Bind value
+        $stmt->bindValue(':balance', $balance, PDO::PARAM_INT);
 
-    // Execute
-    if ($stmt->execute()) {
-       // echo "Morning balance recorded successfully!";
-    } else {
-        $errorInfo = $stmt->errorInfo();
-        echo "Error: " . $errorInfo[2];
+        // Execute
+        if ($stmt->execute()) {
+            // echo "Morning balance recorded successfully!";
+        } else {
+            $errorInfo = $stmt->errorInfo();
+            echo "Error: " . $errorInfo[2];
+        }
     }
-} 
 
 
 
@@ -51,13 +51,12 @@ if ($_POST) {
             $name = $_POST['name'];
             $description = $_POST['description'];
             $price = intval($_POST['price']);
-           $quantity_available = intval($_POST['quantity']);
+            $quantity_available = intval($_POST['quantity']);
             $category = $_POST['category'];
             $time_available = $_POST['time_available'];
-            
-            $foodItem->requestAddItem($name, $description, $price,$quantity_available, $category, $time_available, $_SESSION['user_id']);
+
+            $foodItem->requestAddItem($name, $description, $price, $quantity_available, $category, $time_available, $_SESSION['user_id']);
             $success_message = "Add item request submitted for admin approval!";
-            
         } /* elseif (isset($_POST['update_item'])) {
             $item_id = $_POST['item_id'];
             $changes = [];
@@ -80,7 +79,6 @@ if ($_POST) {
             $foodItem->requestDeleteItem($item_id, $_SESSION['user_id']);
             $success_message = "Delete item request submitted for admin approval!";
         } */
-        
     } catch (Exception $e) {
         $error_message = "Error: " . $e->getMessage();
     }
@@ -134,6 +132,7 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -142,6 +141,7 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
     <link href="../assets/css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-warning">
         <div class="container">
@@ -162,6 +162,10 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
                     <li class="nav-item">
                         <a class="nav-link text-dark" href="stock_report.php">Stock Report</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" href="billing_page.php">Billing Page</a>
+                    </li>
+
                 </ul>
                 <div class="d-flex align-items-center">
                     <span class="navbar-text me-3 text-dark">
@@ -178,12 +182,12 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
     <div class="container mt-4">
 
 
- <!-- morning balance-->   
-<form method="POST">
-    <label>Morning Balance:</label>
-    <input type="number" name="balance" required>
-    <button type="submit">Submit</button>
-</form>
+        <!-- morning balance-->
+        <form method="POST">
+            <label>Morning Balance:</label>
+            <input type="number" name="balance" required>
+            <button type="submit">Submit</button>
+        </form>
 
 
 
@@ -200,7 +204,7 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-        
+
         <?php if ($error_message): ?>
             <div class="alert alert-danger alert-dismissible fade show">
                 <?php echo $error_message; ?>
@@ -230,7 +234,7 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
                                 <label for="price" class="form-label">Price (₹)</label>
                                 <input type="number" class="form-control" id="price" name="price" step="1" min="0" required>
                             </div>
-                             <div class="mb-3">
+                            <div class="mb-3">
                                 <label for="quantity" class="form-label">Quantity</label>
                                 <input type="number" class="form-control" id="quantity" name="quantity" step="1" min="0" required>
                             </div>
@@ -262,59 +266,60 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
                 </div>
             </div>
 
-          
 
 
-        <!-- Quick Stock Overview -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-bar"></i> Today's Sales Overview</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <?php 
-                    $today_stats = $order->getTodayStats();
-                    ?>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h4 class="text-primary"><?php echo $today_stats['orders']; ?></h4>
-                            <p class="mb-0">Orders Today</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h4 class="text-success">₹<?php echo number_format($today_stats['revenue'], 2); ?></h4>
-                            <p class="mb-0">Revenue Today</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-    <div class="text-center">
-       <!--  <h4 class="text-success">₹<php echo number_format($today_stats['revenue'], 2); ?></h4> -->
-       <!--  <p class="mb-0">Revenue Today</p> -->
-        
-           <h4 class="text-success"> Amount to return <strong>₹<?php echo number_format($total_revenue, 2); ?></strong></h4>
-        
-    </div>
-</div>
 
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h4 class="text-info"><?php echo $today_stats['items']; ?></h4>
-                            <p class="mb-0">Items Sold</p>
+            <!-- Quick Stock Overview -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Today's Sales Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <?php
+                        $today_stats = $order->getTodayStats();
+                        ?>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-primary"><?php echo $today_stats['orders']; ?></h4>
+                                <p class="mb-0">Orders Today</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <a href="stock_report.php" class="btn btn-outline-primary">
-                                <i class="fas fa-chart-line"></i> View Detailed Report
-                            </a>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">₹<?php echo number_format($today_stats['revenue'], 2); ?></h4>
+                                <p class="mb-0">Revenue Today</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <!--  <h4 class="text-success">₹<php echo number_format($today_stats['revenue'], 2); ?></h4> -->
+                                <!--  <p class="mb-0">Revenue Today</p> -->
+
+                                <h4 class="text-success"> Amount to return <strong>₹<?php echo number_format($total_revenue, 2); ?></strong></h4>
+
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-info"><?php echo $today_stats['items']; ?></h4>
+                                <p class="mb-0">Items Sold</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <a href="stock_report.php" class="btn btn-outline-primary">
+                                    <i class="fas fa-chart-line"></i> View Detailed Report
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

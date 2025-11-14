@@ -50,32 +50,32 @@ if ($_POST) {
         } */
 
 
-            if (isset($_POST['increase_stock']) || isset($_POST['decrease_stock'])) {
-    $item_id = intval($_POST['item_id']);
-    $adjust_qty = intval($_POST['adjust_quantity']);
+        if (isset($_POST['increase_stock']) || isset($_POST['decrease_stock'])) {
+            $item_id = intval($_POST['item_id']);
+            $adjust_qty = intval($_POST['adjust_quantity']);
 
-    if ($adjust_qty < 1) $adjust_qty = 1; // prevent invalid input
+            if ($adjust_qty < 1) $adjust_qty = 1; // prevent invalid input
 
-    if (isset($_POST['increase_stock'])) {
-        $stmt = $db->prepare("UPDATE food_items 
+            if (isset($_POST['increase_stock'])) {
+                $stmt = $db->prepare("UPDATE food_items 
                               SET quantity_available = quantity_available + :qty 
                               WHERE id = :id");
-        $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
-        $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
-        $stmt->execute();
-        $success_message = "Stock increased by {$adjust_qty}";
-    }
+                $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
+                $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $success_message = "Stock increased by {$adjust_qty}";
+            }
 
-    if (isset($_POST['decrease_stock'])) {
-        $stmt = $db->prepare("UPDATE food_items 
+            if (isset($_POST['decrease_stock'])) {
+                $stmt = $db->prepare("UPDATE food_items 
                               SET quantity_available = GREATEST(quantity_available - :qty, 0) 
                               WHERE id = :id");
-        $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
-        $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
-        $stmt->execute();
-        $success_message = "Stock decreased by {$adjust_qty}";
-    }
-}
+                $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
+                $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $success_message = "Stock decreased by {$adjust_qty}";
+            }
+        }
 
 
 
@@ -92,7 +92,7 @@ if ($_POST) {
             $success_message = "Stock quantity set successfully!";
         }
 
-          if ($success_message !== '') {
+        if ($success_message !== '') {
             $redirect = $_SERVER['PHP_SELF'] . "?success=" . urlencode($success_message);
             if (!headers_sent()) {
                 header("Location: $redirect");
@@ -102,9 +102,6 @@ if ($_POST) {
                 exit;
             }
         }
-
-      
-
     } catch (Exception $e) {
         $error_message = "Error: " . $e->getMessage();
     }
@@ -115,6 +112,7 @@ if ($_POST) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,20 +121,24 @@ if ($_POST) {
     <link href="../assets/css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-warning">
         <div class="container">
             <a class="navbar-brand text-dark" href="#">Cashier Dashboard - PSG iTech Canteen System</a>
             <div class="d-flex align-items-center">
-                  <li class="nav-item">
-                        <a class="nav-link  text-dark" href="dashboard.php">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link  active text-dark" href="stock_update.php">Stock update</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="stock_report.php">Stock Report</a>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link  text-dark" href="dashboard.php">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link  active text-dark" href="stock_update.php">Stock update</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="stock_report.php">Stock Report</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="billing_page.php">Billing Page</a>
+                </li>
                 <span class="navbar-text me-3 text-dark">
                     <i class="fas fa-user"></i> Cashier: <?php echo $_SESSION['roll_no']; ?>
                 </span>
@@ -168,48 +170,48 @@ if ($_POST) {
             <div class="card-header">
                 <h5><i class="fas fa-list"></i> Current Food Items & Stock</h5>
             </div>
-<!-- searching --> 
+            <!-- searching -->
 
-<div class="card mt-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        
-        <form method="get" class="d-flex">
-            <input type="text" name="search" 
-                   class="form-control form-control-sm me-2"
-                   placeholder="Search items..."
-                   value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-            <button type="submit" class="btn btn-primary btn-sm">Search</button>
-        </form>
-    </div>
-  
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
 
+                    <form method="get" class="d-flex">
+                        <input type="text" name="search"
+                            class="form-control form-control-sm me-2"
+                            placeholder="Search items..."
+                            value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                    </form>
+                </div>
 
 
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Price</th>
-                                <th>Category</th>
-                                <th>Available Time</th>
-                                <th>Quantity Available</th>
-                                <th>Adjust Stock</th>
-                                <th>Manual Update</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($all_items as $item): ?>
+
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
                                 <tr>
-                                    <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                    <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                    <td>₹<?php echo number_format($item['price'], 2); ?></td>
-                                    <td><?php echo ucfirst($item['category']); ?></td>
-                                    <td><?php echo $item['time_available']; ?></td>
-                                    <td><strong><?php echo $item['quantity_available']; ?></strong></td>
-                                   <!--  <td>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Category</th>
+                                    <th>Available Time</th>
+                                    <th>Quantity Available</th>
+                                    <th>Adjust Stock</th>
+                                    <th>Manual Update</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($all_items as $item): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($item['name']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['description']); ?></td>
+                                        <td>₹<?php echo number_format($item['price'], 2); ?></td>
+                                        <td><?php echo ucfirst($item['category']); ?></td>
+                                        <td><?php echo $item['time_available']; ?></td>
+                                        <td><strong><?php echo $item['quantity_available']; ?></strong></td>
+                                        <!--  <td>
                                         <form method="POST" class="d-inline">
                                             <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
                                             <input type="hidden" name="change" value="1">
@@ -225,43 +227,44 @@ if ($_POST) {
                                             </button>
                                         </form>
                                     </td> -->
-                                    <td>
-    <form method="POST" class="d-flex align-items-center"  onkeypress="return event.keyCode != 13;">
-        <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                        <td>
+                                            <form method="POST" class="d-flex align-items-center" onkeypress="return event.keyCode != 13;">
+                                                <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
 
-        <!-- Adjustment input (default 1) -->
-        <input type="number" name="adjust_quantity" value="0" min="1" class="form-control form-control-sm w-50 me-2">
+                                                <!-- Adjustment input (default 1) -->
+                                                <input type="number" name="adjust_quantity" value="0" min="1" class="form-control form-control-sm w-50 me-2">
 
-        <!-- Increase -->
-        <button type="submit" name="increase_stock" class="btn btn-success btn-sm me-1">+</button>
+                                                <!-- Increase -->
+                                                <button type="submit" name="increase_stock" class="btn btn-success btn-sm me-1">+</button>
 
-        <!-- Decrease -->
-        <button type="submit" name="decrease_stock" class="btn btn-danger btn-sm">-</button>
-    </form>
-</td>
+                                                <!-- Decrease -->
+                                                <button type="submit" name="decrease_stock" class="btn btn-danger btn-sm">-</button>
+                                            </form>
+                                        </td>
 
-                                    <td>
-                                        <form method="POST" class="d-flex">
-                                            <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                            <input type="number" name="new_quantity" class="form-control form-control-sm me-2" min="0" required>
-                                            <button type="submit" name="manual_update" class="btn btn-primary btn-sm">Update</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($all_items)): ?>
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted">No items available.</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                        <td>
+                                            <form method="POST" class="d-flex">
+                                                <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                                <input type="number" name="new_quantity" class="form-control form-control-sm me-2" min="0" required>
+                                                <button type="submit" name="manual_update" class="btn btn-primary btn-sm">Update</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($all_items)): ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">No items available.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
 
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
+
 </html>

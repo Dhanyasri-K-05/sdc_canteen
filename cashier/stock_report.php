@@ -20,6 +20,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,6 +29,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
     <link href="../assets/css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-warning">
         <div class="container">
@@ -35,6 +37,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
             <div class="navbar-nav ms-auto">
                 <a class="nav-link text-dark" href="dashboard.php">Dashboard</a>
                 <a class="nav-link active text-dark" href="stock_report.php">Stock Report</a>
+
                 <a class="nav-link text-dark" href="../logout.php">Logout</a>
             </div>
         </div>
@@ -42,7 +45,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
 
     <div class="container mt-4">
         <h2><i class="fas fa-chart-line"></i> Stock & Sales Report</h2>
-        
+
         <!-- Date Range Filter -->
         <div class="card mb-4">
             <div class="card-body">
@@ -88,7 +91,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-table"></i> Item-wise Sales Report</h5>
                 <span class="badge bg-primary">
-                    <?php echo date('d/m/Y', strtotime($start_date)); ?> 
+                    <?php echo date('d/m/Y', strtotime($start_date)); ?>
                     <?php if ($start_date != $end_date): ?>
                         to <?php echo date('d/m/Y', strtotime($end_date)); ?>
                     <?php endif; ?>
@@ -113,10 +116,10 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php 
+                                <?php
                                 $total_quantity = 0;
                                 $total_revenue = 0;
-                                foreach ($stock_report as $item): 
+                                foreach ($stock_report as $item):
                                     $total_quantity += $item['total_quantity'];
                                     $total_revenue += $item['total_revenue'];
                                 ?>
@@ -166,7 +169,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <?php 
+                        <?php
                         $category_stats = [];
                         foreach ($stock_report as $item) {
                             $category = $item['category'];
@@ -176,7 +179,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
                             $category_stats[$category]['quantity'] += $item['total_quantity'];
                             $category_stats[$category]['revenue'] += $item['total_revenue'];
                         }
-                        
+
                         foreach ($category_stats as $category => $stats):
                         ?>
                             <div class="col-md-3">
@@ -197,4 +200,5 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
