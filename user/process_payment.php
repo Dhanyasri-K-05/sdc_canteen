@@ -3,8 +3,6 @@ require_once '../config/session.php';
 require_once(__DIR__ . '/../config/database.php');
 require_once '../classes/Order.php';
 require_once '../classes/User.php';
-require_once '../classes/FoodItem.php';
-
 
 requireRole('user','staff');
 
@@ -41,13 +39,25 @@ if ($_POST && isset($_POST['payment_method'])) {
             // Process wallet payment
             $db->beginTransaction();
 
-        
+        /*     // Check if all items in the cart have enough stock
+foreach ($cart as $item) {
+    $currentStock = $foodItem->getItemById($item['id']);
+    if ($currentStock['quantity_available'] < $item['quantity']) {
+        header('Location: dashboard.php?error=insufficient_stock');
+        exit();
+    }
+}
+
+if ($item['quantity_available'] < $item['quantity']) {
+    header('Location: dashboard.php?error=insufficient_stock');
+    exit();
+} */
 
 
             
             // Create order
-          $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'wallet', $cart);
-
+            $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'wallet');
+            
             // Add order items
             foreach ($cart as $item) {
                 $order->addOrderItem($order_id, $item['id'], $item['quantity'], $item['price']);
@@ -56,7 +66,12 @@ if ($_POST && isset($_POST['payment_method'])) {
             // Deduct from wallet
             $user->updateWalletBalance($_SESSION['user_id'], -$total_amount);
 
-     
+          /*   // Deduct stock for each item
+foreach ($cart as $item) {
+    $foodItem->reduceStock($item['id'], $item['quantity']); 
+    // reduceStock should execute:
+    // UPDATE food_items SET quantity_available = quantity_available - ? WHERE id = ?
+} */
 
             
             // Record wallet transaction
@@ -66,9 +81,6 @@ if ($_POST && isset($_POST['payment_method'])) {
             
             // Update order status
             $order->updatePaymentStatus($order_id, 'completed');
-
-                   
-
             
             // Update session wallet balance
             $_SESSION['wallet_balance'] = $user->getWalletBalance($_SESSION['user_id']);

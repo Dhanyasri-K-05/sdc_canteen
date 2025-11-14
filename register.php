@@ -68,13 +68,13 @@ if ($_POST && isset($_POST['register'])) {
 
  $result = $user->register($roll_no, $email, $password);
 
-if ($result) {
-    $success_message = "Registration successful! You can now login.";
+if (is_array($result) && $result['status']) {
+    $role_assigned = $result['role'];
+    $success_message = "Registration successful as '$role_assigned'! You can now login.";
     $_POST = array();
 } else {
     $error_message = "Registration failed. Please try again.";
 }
-
 
 
             }

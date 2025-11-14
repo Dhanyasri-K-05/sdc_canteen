@@ -3,8 +3,12 @@ require_once '../config/session.php';
 require_once(__DIR__ . '/../config/database.php');
 require_once '../classes/FoodItem.php';
 require_once '../classes/Order.php';
+require_once __DIR__ . '/../auto_stock_reset.php';
 
 requireRole('cashier');
+
+// Auto reset coffee and tea stock after 11 AM
+resetCoffeeTeaStock();
 
 $database = new Database();
 $db = $database->getConnection();
@@ -13,6 +17,16 @@ $order = new Order($db);
 
 $success_message = '';
 $error_message = '';
+$time_restriction_message = '';
+
+// Check if stock entry is allowed (only after 3:00 PM for coffee/tea)
+$current_time = date('H:i:s');
+$stock_entry_allowed = ($current_time >= '15:00:00');
+
+// If before 3 PM, set warning message for coffee/tea only
+if (!$stock_entry_allowed) {
+    $time_restriction_message = "⚠️ Coffee & Tea stock entry is restricted until 3:00 PM. Other items can be updated anytime. Current time: " . date('h:i A');
+}
 
 
 
@@ -38,58 +52,74 @@ if (isset($_GET['search']) && $_GET['search'] !== "") {
 
 if ($_POST) {
     try {
-        // Increment or decrement stock
-        /* if (isset($_POST['adjust_stock'])) {
-            $item_id = intval($_POST['item_id']);
-            $change = intval($_POST['change']); // +1 or -1
-            $stmt = $db->prepare("UPDATE food_items SET quantity_available = quantity_available + :chg WHERE id = :id");
-            $stmt->bindValue(':chg', $change, PDO::PARAM_INT);
-            $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $success_message = "Stock updated successfully!";
-        } */
+        // Get item name to check if it's coffee/tea
+        $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
+        $check_item = $db->prepare("SELECT name FROM food_items WHERE id = ?");
+        $check_item->execute([$item_id]);
+        $item_data = $check_item->fetch(PDO::FETCH_ASSOC);
+        $item_name = $item_data ? strtolower($item_data['name']) : '';
+        
+        // Check if it's coffee or tea
+        $is_coffee_tea = (strpos($item_name, 'coffee') !== false || strpos($item_name, 'tea') !== false);
+        
+        // Time restriction only applies to coffee and tea
+        if ($is_coffee_tea && !$stock_entry_allowed) {
+            $error_message = "Coffee and Tea stock entry is only allowed after 3:00 PM. Current time: " . date('h:i A');
+        } else {
+            // Increment or decrement stock
+            /* if (isset($_POST['adjust_stock'])) {
+                $item_id = intval($_POST['item_id']);
+                $change = intval($_POST['change']); // +1 or -1
+                $stmt = $db->prepare("UPDATE food_items SET quantity_available = quantity_available + :chg WHERE id = :id");
+                $stmt->bindValue(':chg', $change, PDO::PARAM_INT);
+                $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $success_message = "Stock updated successfully!";
+            } */
 
 
             if (isset($_POST['increase_stock']) || isset($_POST['decrease_stock'])) {
-    $item_id = intval($_POST['item_id']);
-    $adjust_qty = intval($_POST['adjust_quantity']);
+                $item_id = intval($_POST['item_id']);
+                $adjust_qty = intval($_POST['adjust_quantity']);
 
-    if ($adjust_qty < 1) $adjust_qty = 1; // prevent invalid input
+                if ($adjust_qty < 1) $adjust_qty = 1; // prevent invalid input
 
-    if (isset($_POST['increase_stock'])) {
-        $stmt = $db->prepare("UPDATE food_items 
-                              SET quantity_available = quantity_available + :qty 
-                              WHERE id = :id");
-        $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
-        $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
-        $stmt->execute();
-        $success_message = "Stock increased by {$adjust_qty}";
-    }
+                if (isset($_POST['increase_stock'])) {
+                    $stmt = $db->prepare("UPDATE food_items 
+                                          SET quantity_available = quantity_available + :qty,
+                                              last_stock_update = NOW()
+                                          WHERE id = :id");
+                    $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
+                    $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $success_message = "Stock increased by {$adjust_qty}";
+                }
 
-    if (isset($_POST['decrease_stock'])) {
-        $stmt = $db->prepare("UPDATE food_items 
-                              SET quantity_available = GREATEST(quantity_available - :qty, 0) 
-                              WHERE id = :id");
-        $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
-        $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
-        $stmt->execute();
-        $success_message = "Stock decreased by {$adjust_qty}";
-    }
-}
+                if (isset($_POST['decrease_stock'])) {
+                    $stmt = $db->prepare("UPDATE food_items 
+                                          SET quantity_available = GREATEST(quantity_available - :qty, 0),
+                                              last_stock_update = NOW()
+                                          WHERE id = :id");
+                    $stmt->bindValue(':qty', $adjust_qty, PDO::PARAM_INT);
+                    $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $success_message = "Stock decreased by {$adjust_qty}";
+                }
+            }
 
-
-
-
-
-        // Manual stock update
-        if (isset($_POST['manual_update'])) {
-            $item_id = intval($_POST['item_id']);
-            $new_qty = intval($_POST['new_quantity']);
-            $stmt = $db->prepare("UPDATE food_items SET quantity_available = :qty WHERE id = :id");
-            $stmt->bindValue(':qty', $new_qty, PDO::PARAM_INT);
-            $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $success_message = "Stock quantity set successfully!";
+            // Manual stock update
+            if (isset($_POST['manual_update'])) {
+                $item_id = intval($_POST['item_id']);
+                $new_qty = intval($_POST['new_quantity']);
+                $stmt = $db->prepare("UPDATE food_items 
+                                      SET quantity_available = :qty,
+                                          last_stock_update = NOW()
+                                      WHERE id = :id");
+                $stmt->bindValue(':qty', $new_qty, PDO::PARAM_INT);
+                $stmt->bindValue(':id', $item_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $success_message = "Stock quantity set successfully!";
+            }
         }
 
           if ($success_message !== '') {
@@ -149,6 +179,13 @@ if ($_POST) {
 
     <div class="container mt-4">
 
+        <?php if ($time_restriction_message): ?>
+            <div class="alert alert-warning alert-dismissible fade show">
+                <i class="fas fa-clock"></i> <?php echo $time_restriction_message; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
         <?php if ($success_message): ?>
             <div class="alert alert-success alert-dismissible fade show">
                 <?php echo $success_message; ?>
@@ -162,6 +199,33 @@ if ($_POST) {
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
+
+        <!-- Stock Entry Status Card -->
+        <div class="card mb-3 <?php echo $stock_entry_allowed ? 'border-success' : 'border-info'; ?>">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-1">
+                            <i class="fas fa-clock"></i> Stock Entry Status
+                        </h5>
+                        <p class="mb-0">
+                            Current Time: <strong><?php echo date('h:i A'); ?></strong><br>
+                            <?php if ($stock_entry_allowed): ?>
+                                <span class="badge bg-success ms-2">All Items: Entry Allowed</span>
+                            <?php else: ?>
+                                <span class="badge bg-success ms-2">Other Items: Anytime ✅</span>
+                                <span class="badge bg-warning text-dark ms-2">Coffee/Tea: After 3 PM 🔒</span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <?php if (!$stock_entry_allowed): ?>
+                            <small class="text-muted">Coffee & Tea locked until 3:00 PM</small>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Current Food Items with Stock Controls -->
         <div class="card">
@@ -201,50 +265,44 @@ if ($_POST) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($all_items as $item): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($item['name']); ?></td>
+                            <?php foreach ($all_items as $item): 
+                                // Check if this item is coffee or tea
+                                $item_name_lower = strtolower($item['name']);
+                                $is_coffee_tea = (strpos($item_name_lower, 'coffee') !== false || strpos($item_name_lower, 'tea') !== false);
+                                $item_disabled = ($is_coffee_tea && !$stock_entry_allowed);
+                            ?>
+                                <tr<?php echo $item_disabled ? ' class="table-warning"' : ''; ?>>
+                                    <td>
+                                        <?php echo htmlspecialchars($item['name']); ?>
+                                        <?php if ($item_disabled): ?>
+                                            <span class="badge bg-warning text-dark">Locked until 3 PM</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($item['description']); ?></td>
                                     <td>₹<?php echo number_format($item['price'], 2); ?></td>
                                     <td><?php echo ucfirst($item['category']); ?></td>
                                     <td><?php echo $item['time_available']; ?></td>
                                     <td><strong><?php echo $item['quantity_available']; ?></strong></td>
-                                   <!--  <td>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                            <input type="hidden" name="change" value="1">
-                                            <button type="submit" name="adjust_stock" class="btn btn-success btn-sm">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </form>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                            <input type="hidden" name="change" value="-1">
-                                            <button type="submit" name="adjust_stock" class="btn btn-danger btn-sm">
-                                                <i class="fas fa-minus"></i>
-                                            </button>
-                                        </form>
-                                    </td> -->
                                     <td>
     <form method="POST" class="d-flex align-items-center"  onkeypress="return event.keyCode != 13;">
         <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
 
-        <!-- Adjustment input (default 1) -->
-        <input type="number" name="adjust_quantity" value="0" min="1" class="form-control form-control-sm w-50 me-2">
+        <!-- Adjustment input -->
+        <input type="number" name="adjust_quantity" value="0" min="1" class="form-control form-control-sm w-50 me-2" <?php echo $item_disabled ? 'disabled' : ''; ?>>
 
         <!-- Increase -->
-        <button type="submit" name="increase_stock" class="btn btn-success btn-sm me-1">+</button>
+        <button type="submit" name="increase_stock" class="btn btn-success btn-sm me-1" <?php echo $item_disabled ? 'disabled' : ''; ?>>+</button>
 
         <!-- Decrease -->
-        <button type="submit" name="decrease_stock" class="btn btn-danger btn-sm">-</button>
+        <button type="submit" name="decrease_stock" class="btn btn-danger btn-sm" <?php echo $item_disabled ? 'disabled' : ''; ?>>-</button>
     </form>
 </td>
 
                                     <td>
                                         <form method="POST" class="d-flex">
                                             <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                            <input type="number" name="new_quantity" class="form-control form-control-sm me-2" min="0" required>
-                                            <button type="submit" name="manual_update" class="btn btn-primary btn-sm">Update</button>
+                                            <input type="number" name="new_quantity" class="form-control form-control-sm me-2" min="0" required <?php echo $item_disabled ? 'disabled' : ''; ?>>
+                                            <button type="submit" name="manual_update" class="btn btn-primary btn-sm" <?php echo $item_disabled ? 'disabled' : ''; ?>>Update</button>
                                         </form>
                                     </td>
                                 </tr>

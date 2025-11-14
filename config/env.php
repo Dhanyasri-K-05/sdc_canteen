@@ -27,7 +27,6 @@ function loadEnv($path = null) {
     return true;
 }
 
-
 // Load environment variables
 loadEnv();
 ?>

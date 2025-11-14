@@ -1,18 +1,15 @@
 <?php
 require_once(__DIR__ . '/../config/database.php');
 
-
 class User {
     private $conn;
     private $table_name = "users";
      private $staff_table = "staff";
-     private $encryption_key;
 
     public function __construct($db) {
         $this->conn = $db;
-         $this->encryption_key = $_ENV['ENCRYPTION_KEY'] ?? 'default_32_byte_secret_key_1234567890';
     }
- 
+
    
     // ✅ Check if roll_no exists in staff table
     private function isStaff($roll_no) {
@@ -21,9 +18,8 @@ class User {
         $stmt->execute([$roll_no]);
         return $stmt->fetch() ? true : false;
     }
-    
 
-   /*  // ✅ Register user with auto role assignment
+    // ✅ Register user with auto role assignment
     public function register($roll_no, $email, $password) {
         // Determine role automatically
         $role = $this->isStaff($roll_no) ? 'staff' : 'user';
@@ -45,35 +41,6 @@ class User {
             throw new Exception("Registration failed: " . $e->getMessage());
         }
     }
- */
-
-    // ✅ Register user with auto role assignment
-public function register($roll_no, $email, $password) {
-    // Determine role automatically
-    $role = $this->isStaff($roll_no) ? 'staff' : 'user';
-
-    // Encrypt the default wallet balance (0.00)
-    $encrypted_balance = $this->encryptBalance(0.00);
-
-    $query = "INSERT INTO " . $this->table_name . " 
-              (roll_no, email, password, role, wallet_balance, created_at) 
-              VALUES (?, ?, ?, ?, ?, NOW())";
-              
-    $stmt = $this->conn->prepare($query);
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-    try {
-        $result = $stmt->execute([$roll_no, $email, $hashed_password, $role, $encrypted_balance]);
-        if ($result) {
-            error_log("New user registered: Roll Number: $roll_no, Email: $email, Role: $role");
-            return true;
-        }
-        return false;
-    } catch (PDOException $e) {
-        error_log("Registration error: " . $e->getMessage());
-        throw new Exception("Registration failed: " . $e->getMessage());
-    }
-}
 
     public function login($roll_no, $password) {
         $query = "SELECT id, roll_no, email, password, role, wallet_balance, created_at FROM " . $this->table_name . " WHERE roll_no = ? OR email = ?";
@@ -103,27 +70,11 @@ public function register($roll_no, $email, $password) {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-     Private $cipher_method = "AES-256-CBC"; 
-
-
-    // Encrypt value
- Public function encryptBalance($amount) {
-    $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($this->cipher_method));
-    $encrypted = openssl_encrypt($amount, $this->cipher_method, $this->encryption_key, 0, $iv);
-    return base64_encode($encrypted . "::" . $iv);
-}
- 
-// Decrypt value
- Public function decryptBalance($encrypted_value) {
-    list($encrypted_data, $iv) = explode("::", base64_decode($encrypted_value), 2);
-    return openssl_decrypt($encrypted_data, $this->cipher_method, $this->encryption_key, 0, $iv);
-} 
-
-   /*  public function updateWalletBalance($user_id, $amount) {
+    public function updateWalletBalance($user_id, $amount) {
         $query = "UPDATE " . $this->table_name . " SET wallet_balance = wallet_balance + ? WHERE id = ?";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([$amount, $user_id]);
-    } 
+    }
 
     public function getWalletBalance($user_id) {
         $query = "SELECT wallet_balance FROM " . $this->table_name . " WHERE id = ?";
@@ -131,45 +82,7 @@ public function register($roll_no, $email, $password) {
         $stmt->execute([$user_id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result ? $result['wallet_balance'] : 0;
-    } */
- 
-
-    public function updateWalletBalance($user_id, $amount) {
-    // Get current encrypted balance
-    $query = "SELECT wallet_balance FROM " . $this->table_name . " WHERE id = ?";
-    $stmt = $this->conn->prepare($query);
-    $stmt->execute([$user_id]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    $current_balance = 0;
-    if ($result && $result['wallet_balance']) {
-        $current_balance = $this->decryptBalance($result['wallet_balance']);
     }
-
-    // Calculate new balance
-    $new_balance = $current_balance + $amount;
-
-    // Encrypt and update
-    $encrypted_balance = $this->encryptBalance($new_balance);
-    $update_query = "UPDATE " . $this->table_name . " SET wallet_balance = ? WHERE id = ?";
-    $update_stmt = $this->conn->prepare($update_query);
-    return $update_stmt->execute([$encrypted_balance, $user_id]);
-}
-
- public function getWalletBalance($user_id) {
-     $query = "SELECT wallet_balance FROM " . $this->table_name . " WHERE id = ?";
-     $stmt = $this->conn->prepare($query);
-     $stmt->execute([$user_id]);
-     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-     if ($result && $result['wallet_balance']) {
-         return $this->decryptBalance($result['wallet_balance']);
-     }
-    return 0;
- }
-
-
-
 
     public function updateRole($user_id, $role) {
         $valid_roles = ['user', 'cashier', 'admin'];
