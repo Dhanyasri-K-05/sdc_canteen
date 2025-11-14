@@ -92,6 +92,24 @@ public function register($roll_no, $email, $password) {
         return false;
     }
 
+    public function updateUserDetails($id, $email, $password = null, $role) {
+        try {
+            if ($password) {
+                $query = "UPDATE users SET email = :email, password = :password, role = :role, updated_at = NOW() WHERE id = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':password', $password);
+            } else {
+                $query = "UPDATE users SET email = :email, role = :role, updated_at = NOW() WHERE id = :id";
+                $stmt = $this->conn->prepare($query);
+            }
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':role', $role);
+            $stmt->bindParam(':id', $id);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            throw new Exception("Database error: " . $e->getMessage());
+        }
+    }
 
 
 
@@ -198,11 +216,15 @@ public function register($roll_no, $email, $password) {
     }
 
     public function getUsersByRole($role) {
-        $query = "SELECT id, roll_no, email, role, wallet_balance, created_at FROM " . $this->table_name . " WHERE role = ? ORDER BY created_at DESC";
-        $stmt = $this->conn->prepare($query);
+    if ($role === 'staff') {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE role IN ('staff', 'cashier') ORDER BY id DESC");
+        $stmt->execute();
+    } else {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE role = ? ORDER BY id DESC");
         $stmt->execute([$role]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
     public function checkUserExists($roll_no, $email) {
         $query = "SELECT id FROM " . $this->table_name . " WHERE roll_no = ? OR email = ?";
@@ -210,5 +232,42 @@ public function register($roll_no, $email, $password) {
         $stmt->execute([$roll_no, $email]);
         return $stmt->fetch() ? true : false;
     }
+
+    public function createUser($roll_no, $email, $password, $role = 'user') {
+        // Prevent duplicate users
+        if ($this->checkUserExists($roll_no, $email)) {
+            throw new Exception("User with this roll number or email already exists.");
+        }
+
+        // Validate role
+        $valid_roles = ['user', 'staff', 'cashier', 'admin'];
+        if (!in_array($role, $valid_roles)) {
+            throw new Exception("Invalid role specified.");
+        }
+
+        // Encrypt default wallet balance
+        $encrypted_balance = $this->encryptBalance(0.00);
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        $query = "INSERT INTO " . $this->table_name . " 
+                (roll_no, email, password, role, wallet_balance, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())";
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute([$roll_no, $email, $hashed_password, $role, $encrypted_balance]);
+    }
+    public function deleteUser($id) {
+        $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$id]);
+    }
+    public function updateUser($id, $email, $role) {
+        $query = "UPDATE " . $this->table_name . " SET email = ?, role = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$email, $role, $id]);
+    }
+
+
+
 }
 ?>

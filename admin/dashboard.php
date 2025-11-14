@@ -315,33 +315,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['approval_id'])) {
         </div>
 
         <!-- Recent Orders -->
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-list"></i> Recent Orders</h5>
-            </div>
-            <div class="card-body">
-                <?php if (empty($recent_orders)): ?>
-                    <p class="text-muted">No recent orders</p>
-                <?php else: ?>
-                    <?php foreach ($recent_orders as $recent_order): ?>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <strong><?php echo $recent_order['bill_number']; ?></strong>
-                                <span class="badge bg-<?php echo $recent_order['payment_status'] == 'completed' ? 'success' : 'warning'; ?>">
-                                    <?php echo ucfirst($recent_order['payment_status']); ?>
-                                </span>
-                            </div>
-                            <small class="text-muted">
-                                <?php echo $recent_order['roll_no']; ?> - 
-                                ₹<?php echo number_format($recent_order['total_amount'], 2); ?><br>
-                                <?php echo date('d/m/Y H:i', strtotime($recent_order['created_at'])); ?>
-                            </small>
-                        </div>
-                        <hr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
+        
     </div>
 </div>
 
