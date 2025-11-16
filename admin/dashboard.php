@@ -117,9 +117,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['approval_id'])) {
                     <li class="nav-item">
                         <a class="nav-link active" href="dashboard.php">Dashboard</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../../cansoftware_new/cansoftware/frontend/index.php">Reports</a>
-                    </li>
+                   
                     <li class="nav-item">
                         <a class="nav-link" href="manage_users.php">Manage Users</a>
                     </li>

@@ -14,6 +14,15 @@ class FoodItem {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    public function getAllItemsForAdmin() {
+    // Always return ALL active items, ignoring time category
+    $query = "SELECT * FROM " . $this->table_name . " WHERE is_active = 1 ORDER BY category, name";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
     public function getItemById($id) {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = ? AND is_active = 1";
@@ -35,6 +44,7 @@ class FoodItem {
             return 'beverages';
         }
     }
+
 
     public function getAvailableItemsByTime($current_time) {
         $query = "SELECT * FROM " . $this->table_name . " WHERE is_active = 1 AND (
@@ -182,7 +192,7 @@ class FoodItem {
 
 
 
-public function updateItem($id, $name = null, $description = null, $price = null, $category = null) {
+/*public function updateItem($id, $name = null, $description = null, $price = null, $category = null) {
     $fields = [];
     $params = [];
 
@@ -212,8 +222,38 @@ public function updateItem($id, $name = null, $description = null, $price = null
     $params[':id'] = $id;
 
     return $stmt->execute($params);
-}
+}*/
+public function updateItem($id, $name = null, $description = null, $price = null, $category = null) {
+    $fields = [];
+    $params = [];
 
+    if ($name !== null) {
+        $fields[] = "name = :name";
+        $params[':name'] = $name;
+    }
+    if ($description !== null) {
+        $fields[] = "description = :description";
+        $params[':description'] = $description;
+    }
+    if ($price !== null) {
+        $fields[] = "price = :price";
+        $params[':price'] = $price;
+    }
+    if ($category !== null) {
+        $fields[] = "category = :category";
+        $params[':category'] = $category;
+    }
+
+    if (empty($fields)) {
+        return false; // No changes provided
+    }
+
+    $sql = "UPDATE food_items SET " . implode(', ', $fields) . " WHERE id = :id";
+    $params[':id'] = $id;
+
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute($params);
+}
 
 
 public function createOrder($user_id, $bill_number, $items, $payment_method = 'wallet') {
@@ -325,6 +365,25 @@ public function rejectOrder($order_id, $admin_id) {
     $stmt->execute();
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+
+public function updateTodaysSpecial($food_name) {
+    $query = "UPDATE special_item SET food_name = ? WHERE id = 1";
+    $stmt = $this->conn->prepare($query);
+    return $stmt->execute([$food_name]);
+}
+
+public function getTodaysSpecial() {
+    $query = "SELECT f.name, f.description, f.price, f.category, f.image 
+              FROM special_item s
+              JOIN food_items f ON f.name = s.food_name
+             WHERE f.quantity_available > 0
+        LIMIT 1";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
 
 
 

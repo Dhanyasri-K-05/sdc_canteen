@@ -71,7 +71,7 @@ if ($_POST && isset($_POST['login'])) {
                 }
                 exit();
             } else {
-                $error_message = "Invalid Roll Number/Email or Password";
+                $error_message = "Invalid Roll Number or Password";
             }
         } catch (Exception $e) {
             $error_message = "Login failed: " . $e->getMessage();
@@ -114,7 +114,7 @@ if (isset($_GET['registered']) && $_GET['registered'] == '1') {
 
                         <form method="POST">
                             <div class="mb-3">
-                                <label for="roll_no" class="form-label">Roll Number or Email</label>
+                                <label for="roll_no" class="form-label">Roll Number</label>
                                 <input type="text" class="form-control" id="roll_no" name="roll_no" 
                                        value="<?php echo isset($_POST['roll_no']) ? htmlspecialchars($_POST['roll_no']) : ''; ?>" 
                                        placeholder="Enter your Roll Number or email" required>
