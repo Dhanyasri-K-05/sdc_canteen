@@ -63,6 +63,22 @@ if ($_POST && isset($_POST['login'])) {
             $user_data = $user->login($roll_no, $password);
             
             if ($user_data) {
+
+
+             if (isset($user_data['login_type']) && $user_data['login_type'] === 'department') {
+
+        $_SESSION['department_id'] = $user_data['id'];
+        $_SESSION['dept_name'] = $user_data['roll_no'];  // dept_name stored as roll_no
+        $_SESSION['role'] = 'department';
+
+        header("Location: bulk_order.php");
+        exit();
+    }
+
+
+
+
+
                 // Set session variables
 
                 session_regenerate_id(true);

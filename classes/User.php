@@ -6,6 +6,7 @@ class User {
     private $conn;
     private $table_name = "users";
      private $staff_table = "staff";
+     private $dept_table="dept";
      private $encryption_key;
 
     public function __construct($db) {
@@ -88,6 +89,24 @@ public function register($roll_no, $email, $password) {
             unset($user['password']); // Remove password from returned data
             return $user;
         }
+
+          // 2️⃣ If not found → try logging in as a department
+    $deptQuery = "SELECT id, dept_name, password 
+                  FROM departments 
+                  WHERE dept_name = ?";
+
+    $deptStmt = $this->conn->prepare($deptQuery);
+    $deptStmt->execute([$roll_no]);   // roll_no field contains dept name
+    $dept = $deptStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($dept && password_verify($password, $dept['password'])) {
+        return [
+            'id' => $dept['id'],
+            'roll_no' => $dept['dept_name'],
+            'role' => 'department',
+            'login_type' => 'department'
+        ];
+    }
         
         return false;
     }
