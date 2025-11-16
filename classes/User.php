@@ -47,11 +47,9 @@ class User {
 
     // ✅ Login
     public function login($roll_no, $password) {
-        $query = "SELECT id, roll_no, email, password, role, wallet_balance, created_at 
-                  FROM " . $this->table_name . " 
-                  WHERE roll_no = ? OR email = ?";
+        $query = "SELECT id, roll_no, email, password, role, wallet_balance, created_at FROM " . $this->table_name . " WHERE roll_no = ? ";
         $stmt = $this->conn->prepare($query);
-        $stmt->execute([$roll_no, $roll_no]);
+        $stmt->execute([$roll_no]); // Allow login with username or email
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($user && password_verify($password, $user['password'])) {

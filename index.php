@@ -50,7 +50,7 @@ if ($_POST && isset($_POST['login'])) {
                 }
                 exit();
             } else {
-                $error_message = "Invalid Roll Number/Email or Password";
+                $error_message = "Invalid Roll Number or Password";
             }
         } catch (Exception $e) {
             $error_message = "Login failed: " . $e->getMessage();
@@ -91,41 +91,40 @@ if (isset($_GET['registered']) && $_GET['registered'] == '1') {
                         <div class="alert alert-success"><?php echo $success_message; ?></div>
                     <?php endif; ?>
 
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="roll_no" class="form-label">Roll Number or Email</label>
-                            <input type="text" class="form-control" id="roll_no" name="roll_no"
-                                   value="<?php echo isset($_POST['roll_no']) ? htmlspecialchars($_POST['roll_no']) : ''; ?>"
-                                   placeholder="Enter your Roll Number or email" required>
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="roll_no" class="form-label">Roll Number</label>
+                                <input type="text" class="form-control" id="roll_no" name="roll_no" 
+                                       value="<?php echo isset($_POST['roll_no']) ? htmlspecialchars($_POST['roll_no']) : ''; ?>" 
+                                       placeholder="Enter your Roll Number or email" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Enter your password" required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" name="login" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <p class="mb-2">Don't have an account? 
+                                <a href="register.php" class="btn btn-outline-success btn-sm">Register here</a>
+                            </p>
                         </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password"
-                                   placeholder="Enter your password" required>
-                        </div>
-                        <div class="d-grid mb-2">
-                            <button type="submit" name="login" class="btn btn-primary btn-lg">
-                                <i class="fas fa-sign-in-alt"></i> Login
-                            </button>
-                        </div>
-
-                        <!-- ✅ Added "Forgot Password" option -->
-                        <div class="text-center mb-3">
-                            <a href="forgot_password.php" class="text-decoration-none">Forgot Password?</a>
-                        </div>
-                    </form>
-
-                    <hr>
-                    <div class="text-center">
-                        <p class="mb-2">Don't have an account? 
-                            <a href="register.php" class="btn btn-outline-success btn-sm">Register here</a>
-                        </p>
+                        
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

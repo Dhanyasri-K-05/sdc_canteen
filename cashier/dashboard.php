@@ -10,6 +10,8 @@ $database = new Database();
 $db = $database->getConnection();
 $foodItem = new FoodItem($db);
 $order = new Order($db);
+ 
+
 
 $success_message = '';
 $error_message = '';
@@ -130,6 +132,29 @@ if ($morning_balance === false) {
 
 // Total revenue = today revenue + morning balance
 $total_revenue = $today_stats['revenue'] + $morning_balance;
+
+
+
+/*
+if (isset($_POST['update'])) {
+    $food_name = trim($_POST['food_name']);
+    $foodItem->updateTodaysSpecial($food_name);
+    echo "<script>alert('Today’s special updated successfully!');</script>";
+}
+    */
+
+if (isset($_POST['update'])) {
+    $food_name = trim($_POST['food_name']);
+
+    if ($food_name === 'no_items') {
+        // ✅ If user selected "None", mark as no_items
+        $foodItem->updateTodaysSpecial('no_items');
+        echo "<script>alert('Today’s special cleared successfully!');</script>";
+    } else {
+        $foodItem->updateTodaysSpecial($food_name);
+        echo "<script>alert('Today’s special updated successfully!');</script>";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -162,6 +187,9 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
                     <li class="nav-item">
                         <a class="nav-link text-dark" href="stock_report.php">Stock Report</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" href="recharge_wallet.php">Recharge Wallet</a>
+                    </li>
                 </ul>
                 <div class="d-flex align-items-center">
                     <span class="navbar-text me-3 text-dark">
@@ -183,6 +211,35 @@ $total_revenue = $today_stats['revenue'] + $morning_balance;
     <label>Morning Balance:</label>
     <input type="number" name="balance" required>
     <button type="submit">Submit</button>
+</form>
+
+<?php
+$current_special = $foodItem->getTodaysSpecial();
+$current_name = '';
+
+if ($current_special && isset($current_special['name'])) {
+    $current_name = $current_special['name'];
+} else {
+    $current_name = 'no_items'; // default to None
+}
+?>
+
+
+<form method="POST">
+    <label>Select Today's Special:</label>
+    <select name="food_name" class="form-select" required>
+        <option value="no_items" <?php echo ($current_name === 'no_items') ? 'selected' : ''; ?>>None</option>
+        <?php
+        $query = "SELECT name FROM food_items WHERE is_active = 1";
+        $stmt = $db->prepare($query);
+        $stmt->execute();
+        while ($item = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $selected = ($item['name'] === $current_name) ? 'selected' : '';
+            echo "<option value='{$item['name']}' {$selected}>{$item['name']}</option>";
+        }
+        ?>
+    </select>
+    <button type="submit" name="update" class="btn btn-success mt-2">Update Special</button>
 </form>
 
 

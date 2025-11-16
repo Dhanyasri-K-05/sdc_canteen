@@ -2,6 +2,7 @@
 require_once '../config/session.php';
 require_once(__DIR__ . '/../config/database.php');
 require_once '../classes/Order.php';
+require_once '../classes/FoodItem.php';
 require_once '../config/env.php';
 
 // Load Razorpay SDK
@@ -21,6 +22,7 @@ $payment_id = $_GET['payment_id'];
 $razorpay_order_id = $_GET['order_id'];
 $signature = $_GET['signature'];
 $order_id = $_SESSION['current_order_id'];
+$cart = $_SESSION['pending_order']['cart'];
 
 // Load Razorpay configuration from environment
 $razorpay_key_id = $_ENV['RAZORPAY_KEY_ID'] ?? "rzp_test_RGySBmq7ZEVe32";
@@ -34,6 +36,8 @@ $db = $database->getConnection();
 $order = new Order($db);
 
 try {
+
+    $db->beginTransaction();
     // Verify payment signature
     $attributes = [
         'razorpay_order_id' => $razorpay_order_id,
@@ -44,8 +48,34 @@ try {
     $api->utility->verifyPaymentSignature($attributes);
     
     // Signature verification successful - update order with payment details
+
+
+     foreach ($cart as $item) {
+        // Reduce stock for each item in the order
+        $updateStmt = $db->prepare("UPDATE food_items 
+                         SET quantity_available = quantity_available - :qty,
+                             updated_at = NOW()
+                         WHERE id = :id");
+        $updateStmt->bindValue(':qty', $item['quantity'], PDO::PARAM_INT);
+        $updateStmt->bindValue(':id', $item['id'], PDO::PARAM_INT);
+        $updateStmt->execute();
+
+        // Verify the stock was actually reduced
+        if ($updateStmt->rowCount() === 0) {
+            throw new Exception("Failed to update stock for item ID: " . $item['id']);
+        }
+
+        // Log stock reduction for debugging
+        error_log("Stock reduced - Item ID: " . $item['id'] . ", Quantity: " . $item['quantity']);
+    }
+
+
+
     $order->updateRazorpayDetails($order_id, $razorpay_order_id, $payment_id);
     $order->updatePaymentStatus($order_id, 'completed');
+
+    // Commit all changes
+    $db->commit();
     
     // Clear session data
     unset($_SESSION['cart']);
@@ -59,6 +89,11 @@ try {
     exit();
     
 } catch (SignatureVerificationError $e) {
+
+     // Payment signature verification failed
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollback();
+    }
     // Payment signature verification failed
     error_log("Payment signature verification failed: " . $e->getMessage());
     $order->updatePaymentStatus($order_id, 'failed');
@@ -66,6 +101,11 @@ try {
     exit();
     
 } catch (Exception $e) {
+
+      // Other errors
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollback();
+    }
     // Other errors
     error_log("Payment verification error: " . $e->getMessage());
     $order->updatePaymentStatus($order_id, 'failed');
