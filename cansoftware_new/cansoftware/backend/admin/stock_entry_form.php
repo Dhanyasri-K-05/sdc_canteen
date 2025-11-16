@@ -6,7 +6,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
 }
 
 $success = '';
-$pdo = new PDO("pgsql:host=localhost;port=5432;dbname=stock_entry_db", "postgres", "postgres");
+$pdo = new PDO("pgsql:host=localhost;dbname=stock_entry_db", "postgres", "postgres");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     $entry_date = $_POST['entry_date'];

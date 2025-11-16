@@ -28,6 +28,6 @@ class BarcodeGeneratorClass {
 }
 
 // Usage
-$barcode_file = BarcodeGeneratorClass::generateBarcode("BILL202509074598", "bill_7155");
+// $barcode_file = BarcodeGeneratorClass::generateBarcode("BILL202509074598", "bill_7155");
 // echo "<img src='{$barcode_file}' alt='Barcode'>";
 ?>

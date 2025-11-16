@@ -17,6 +17,15 @@ class FoodItem
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    public function getAllItemsForAdmin() {
+    // Always return ALL active items, ignoring time category
+    $query = "SELECT * FROM " . $this->table_name . " WHERE is_active = 1 ORDER BY category, name";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
     public function getItemById($id)
     {
@@ -41,8 +50,8 @@ class FoodItem
         }
     }
 
-    public function getAvailableItemsByTime($current_time)
-    {
+
+    public function getAvailableItemsByTime($current_time) {
         $query = "SELECT * FROM " . $this->table_name . " WHERE is_active = 1 AND (
             (category = 'breakfast' AND ? BETWEEN '06:00' AND '11:00') OR
             (category = 'lunch' AND ? BETWEEN '12:00' AND '16:00') OR
@@ -228,10 +237,9 @@ class FoodItem
 
 
 
-    public function updateItem($id, $name = null, $description = null, $price = null, $category = null)
-    {
-        $fields = [];
-        $params = [];
+/*public function updateItem($id, $name = null, $description = null, $price = null, $category = null) {
+    $fields = [];
+    $params = [];
 
         if ($name !== null) {
             $fields[] = "name = :name";
@@ -258,9 +266,39 @@ class FoodItem
         $stmt = $this->conn->prepare($sql);
         $params[':id'] = $id;
 
-        return $stmt->execute($params);
+    return $stmt->execute($params);
+}*/
+public function updateItem($id, $name = null, $description = null, $price = null, $category = null) {
+    $fields = [];
+    $params = [];
+
+    if ($name !== null) {
+        $fields[] = "name = :name";
+        $params[':name'] = $name;
+    }
+    if ($description !== null) {
+        $fields[] = "description = :description";
+        $params[':description'] = $description;
+    }
+    if ($price !== null) {
+        $fields[] = "price = :price";
+        $params[':price'] = $price;
+    }
+    if ($category !== null) {
+        $fields[] = "category = :category";
+        $params[':category'] = $category;
     }
 
+    if (empty($fields)) {
+        return false; // No changes provided
+    }
+
+    $sql = "UPDATE food_items SET " . implode(', ', $fields) . " WHERE id = :id";
+    $params[':id'] = $id;
+
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute($params);
+}
 
 
     public function createOrder($user_id, $bill_number, $items, $payment_method = 'wallet')
@@ -273,23 +311,16 @@ class FoodItem
                 $total_amount += $item['quantity'] * $item['price'];
             }
 
-            // Convert items to JSON dictionary: foodname => qty
-            $items_array = [];
-            foreach ($items as $item) {
-                $items_array[$item['food_item_name']] = $item['quantity'];
-            }
-            $items_json = json_encode($items_array);
-
-            // Insert into orders (now including items JSON)
-            $stmt = $this->conn->prepare("
-            INSERT INTO orders (user_id, bill_number, total_amount, payment_method, items)
-            VALUES (?, ?, ?, ?, ?)
+        // Insert into orders
+        $stmt = $this->conn->prepare("
+            INSERT INTO orders (user_id, bill_number, total_amount, payment_method)
+            VALUES (?, ?, ?, ?)
         ");
-            $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method, $items_json]);
-            $order_id = $this->conn->lastInsertId();
+        $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method]);
+        $order_id = $this->conn->lastInsertId();
 
-            // Insert each item to order_items table
-            $stmt = $this->conn->prepare("
+        // Insert each item
+        $stmt = $this->conn->prepare("
             INSERT INTO order_items (order_id, food_item_id, quantity, price)
             VALUES (?, ?, ?, ?)
         ");
@@ -304,7 +335,15 @@ class FoodItem
             throw $e;
         }
     }
+}
 
+public function approveOrder($order_id, $admin_id) {
+    $this->conn->beginTransaction();
+    try {
+        // Get all items for this order
+        $stmt = $this->conn->prepare("SELECT * FROM order_items WHERE order_id = ?");
+        $stmt->execute([$order_id]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     public function approveOrder($order_id, $admin_id)
     {
@@ -346,33 +385,36 @@ class FoodItem
     }
 
 
-    public function reduceStockByName($name, $quantity)
-    {
-        $query = "UPDATE {$this->table_name} 
-                  SET quantity_available = quantity_available - :quantity 
-                  WHERE food_name = :name AND quantity_available >= :quantity";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':quantity', $quantity);
-        $stmt->bindParam(':name', $name);
-
-        if ($stmt->execute()) {
-            if ($stmt->rowCount() === 0) {
-                throw new Exception("Insufficient stock or invalid item: $name");
-            }
-            return true;
-        }
-        throw new Exception("Failed to update stock for item: $name");
-    }
 
 
 
-    public function getItemByName($name)
-    {
-        $query = "SELECT * FROM {$this->table_name} WHERE name = :name LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':name', $name);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
+public function updateTodaysSpecial($food_name) {
+    $query = "UPDATE special_item SET food_name = ? WHERE id = 1";
+    $stmt = $this->conn->prepare($query);
+    return $stmt->execute([$food_name]);
+}
+
+public function getTodaysSpecial() {
+    $query = "SELECT f.name, f.description, f.price, f.category, f.image 
+              FROM special_item s
+              JOIN food_items f ON f.name = s.food_name
+             WHERE f.quantity_available > 0
+        LIMIT 1";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

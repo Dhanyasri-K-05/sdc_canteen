@@ -1,6 +1,6 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS food_ordering_system;
-USE food_ordering_system;
+CREATE DATABASE IF NOT EXISTS canteen;
+USE canteen;
 
 -- Users table
 CREATE TABLE users (
@@ -15,13 +15,15 @@ CREATE TABLE users (
 );
 
 -- Food items table
-CREATE TABLE food_items (order_itemsusers
+CREATE TABLE food_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     price DECIMAL(10,2) NOT NULL,
     category ENUM('breakfast', 'lunch', 'snacks', 'beverages') NOT NULL,
     time_available VARCHAR(50) NOT NULL,
+    quantity_available INT DEFAULT 0,
+    last_stock_update TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -112,10 +114,6 @@ INSERT INTO food_items (name, description, price, category, time_available) VALU
 ('Fresh Juice', 'Seasonal fruit juice', 50.00, 'beverages', '06:00-22:00'),
 ('Lassi', 'Yogurt-based drink', 40.00, 'beverages', '06:00-22:00'),
 ('Cold Drink', 'Soft drinks and sodas', 30.00, 'beverages', '06:00-22:00');
-SELECT * from users;ordersorder_itemsorder_itemsmorning_balancefood_items
-
-
-
 
 -- Note: All passwords are hashed version of 'password123'
 -- You can login with any of the above users using 'password123' as password

@@ -46,23 +46,7 @@ foreach ($pending_order['cart'] as $item) {
     $db->beginTransaction();
     
     // Create order in database
-   // Convert cart to key:value format for JSON column
-    $items_array = [];
-    foreach ($pending_order['cart'] as $item) {
-        $qty = $item['quantity'];
-        $rate = $item['price'];
-        $total = $qty * $rate;
-
-        $items_array[$item['name']] = [
-            'quantity' => $qty,
-            'rate' => $rate,
-            'total' => $total
-        ];
-    }
-
-
-    $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'razorpay', $items_array);
-
+    $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'razorpay');
     
     // Add order items
     foreach ($pending_order['cart'] as $item) {
