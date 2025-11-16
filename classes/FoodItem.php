@@ -1,14 +1,17 @@
 <?php
-class FoodItem {
+class FoodItem
+{
     private $conn;
     private $table_name = "food_items";
     private $requests_table = "cashier_requests";
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->conn = $db;
     }
 
-    public function getAllItems() {
+    public function getAllItems()
+    {
         $query = "SELECT * FROM " . $this->table_name . " WHERE is_active = 1 ORDER BY category, name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -24,16 +27,18 @@ class FoodItem {
 }
 
 
-    public function getItemById($id) {
+    public function getItemById($id)
+    {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = ? AND is_active = 1";
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function getCurrentCategory() {
+    public function getCurrentCategory()
+    {
         $current_time = date('H:i');
-        
+
         if ($current_time >= '06:00' && $current_time <= '11:00') {
             return 'breakfast';
         } elseif ($current_time >= '12:00' && $current_time <= '16:00') {
@@ -53,30 +58,66 @@ class FoodItem {
             (category = 'snacks' AND ? BETWEEN '16:00' AND '19:00') OR
             (category = 'beverages' AND ? BETWEEN '06:00' AND '22:00')
         ) ORDER BY category, name";
-        
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$current_time, $current_time, $current_time, $current_time]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-  public function requestAddItem($name, $description, $price, $quantity_available, $category, $time_available, $cashier_id) {
-    $request_data = json_encode([
-        'name' => $name,
-        'description' => $description,
-        'price' => $price,
-        'quantity_available' => $quantity_available,
-        'category' => $category,
-        'time_available' => $time_available
-    ]);
+    /**
+     * Get today's special item.
+     * Returns ['name' => 'no_items'] when none found.
+     */
+    public function getTodaysSpecial()
+    {
+        // Prefer top-selling item today (if exists)
+        $query = "SELECT fi.name, fi.price, SUM(oi.quantity) as sold
+                  FROM order_items oi
+                  JOIN orders o ON oi.order_id = o.id
+                  JOIN " . $this->table_name . " fi ON oi.food_item_id = fi.id
+                  WHERE DATE(o.created_at) = CURDATE() AND o.payment_status = 'completed'
+                  GROUP BY oi.food_item_id
+                  ORDER BY sold DESC
+                  LIMIT 1";
 
-    $query = "INSERT INTO " . $this->requests_table . " (cashier_id, request_type, request_data) 
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result && isset($result['name'])) {
+            return ['name' => $result['name'], 'price' => $result['price']];
+        }
+
+        // Fallback: pick any active item (first found)
+        $fallback = $this->conn->prepare("SELECT name, price FROM " . $this->table_name . " WHERE is_active = 1 LIMIT 1");
+        $fallback->execute();
+        $row = $fallback->fetch(PDO::FETCH_ASSOC);
+        if ($row && isset($row['name'])) {
+            return ['name' => $row['name'], 'price' => $row['price']];
+        }
+
+        return ['name' => 'no_items'];
+    }
+
+    public function requestAddItem($name, $description, $price, $quantity_available, $category, $time_available, $cashier_id)
+    {
+        $request_data = json_encode([
+            'name' => $name,
+            'description' => $description,
+            'price' => $price,
+            'quantity_available' => $quantity_available,
+            'category' => $category,
+            'time_available' => $time_available
+        ]);
+
+        $query = "INSERT INTO " . $this->requests_table . " (cashier_id, request_type, request_data) 
               VALUES (?, 'add_item', ?)";
-    $stmt = $this->conn->prepare($query);
-    return $stmt->execute([$cashier_id, $request_data]);
-}
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$cashier_id, $request_data]);
+    }
 
 
- /*    public function requestUpdateItem($item_id, $changes, $cashier_id) {
+    /*    public function requestUpdateItem($item_id, $changes, $cashier_id) {
         $request_data = json_encode($changes);
 
         $query = "INSERT INTO " . $this->requests_table . " (cashier_id, request_type, food_item_id, request_data) VALUES (?, 'update_item', ?, ?)";
@@ -84,7 +125,8 @@ class FoodItem {
         return $stmt->execute([$cashier_id, $item_id, $request_data]);
     } */
 
-    public function requestDeleteItem($item_id, $cashier_id) {
+    public function requestDeleteItem($item_id, $cashier_id)
+    {
         $request_data = json_encode(['action' => 'delete']);
 
         $query = "INSERT INTO " . $this->requests_table . " (cashier_id, request_type, food_item_id, request_data) VALUES (?, 'delete_item', ?, ?)";
@@ -92,7 +134,8 @@ class FoodItem {
         return $stmt->execute([$cashier_id, $item_id, $request_data]);
     }
 
-    public function getPendingApprovals() {
+    public function getPendingApprovals()
+    {
         $query = "SELECT cr.*, fi.name as item_name, fi.price as current_price, fi.category as current_category, 
                          fi.description as current_description, u.roll_no as cashier_name,
                          cr.request_type as action_type, cr.request_data as change_data
@@ -101,13 +144,14 @@ class FoodItem {
                   JOIN users u ON cr.cashier_id = u.id
                   WHERE cr.status = 'pending'
                   ORDER BY cr.created_at DESC";
-        
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getPendingApprovalsCount() {
+    public function getPendingApprovalsCount()
+    {
         $query = "SELECT COUNT(*) as count FROM " . $this->requests_table . " WHERE status = 'pending'";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -115,22 +159,23 @@ class FoodItem {
         return $result['count'];
     }
 
-    public function approveChange($request_id, $admin_id) {
+    public function approveChange($request_id, $admin_id)
+    {
         $this->conn->beginTransaction();
-        
+
         try {
             // Get request details
             $query = "SELECT * FROM " . $this->requests_table . " WHERE id = ?";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([$request_id]);
             $request = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if (!$request) {
                 throw new Exception("Request not found");
             }
-            
+
             $request_data = json_decode($request['request_data'], true);
-            
+
             // Execute the requested action
             switch ($request['request_type']) {
                 case 'add_item':
@@ -145,45 +190,45 @@ class FoodItem {
                         $request_data['time_available']
                     ]);
                     break;
-                    
+
                 case 'update_item':
                     $set_clauses = [];
                     $values = [];
-                    
+
                     foreach ($request_data as $field => $value) {
                         $set_clauses[] = "$field = ?";
                         $values[] = $value;
                     }
-                    
+
                     $values[] = $request['food_item_id'];
-                    
+
                     $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $set_clauses) . " WHERE id = ?";
                     $stmt = $this->conn->prepare($query);
                     $stmt->execute($values);
                     break;
-                    
+
                 case 'delete_item':
                     $query = "UPDATE " . $this->table_name . " SET is_active = 0 WHERE id = ?";
                     $stmt = $this->conn->prepare($query);
                     $stmt->execute([$request['food_item_id']]);
                     break;
             }
-            
+
             // Update request status
             $query = "UPDATE " . $this->requests_table . " SET status = 'approved', admin_id = ? WHERE id = ?";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([$admin_id, $request_id]);
-            
+
             $this->conn->commit();
             return true;
-            
         } catch (Exception $e) {
             $this->conn->rollback();
             throw $e;
         }
     }
 
-    public function rejectChange($request_id, $admin_id) {
+    public function rejectChange($request_id, $admin_id)
+    {
         $query = "UPDATE " . $this->requests_table . " SET status = 'rejected', admin_id = ? WHERE id = ?";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([$admin_id, $request_id]);
@@ -196,30 +241,30 @@ class FoodItem {
     $fields = [];
     $params = [];
 
-    if ($name !== null) {
-        $fields[] = "name = :name";
-        $params[':name'] = $name;
-    }
-    if ($description !== null) {
-        $fields[] = "description = :description";
-        $params[':description'] = $description;
-    }
-    if ($price !== null) {
-        $fields[] = "price = :price";
-        $params[':price'] = $price;
-    }
-    if ($category !== null) {
-        $fields[] = "category = :category";
-        $params[':category'] = $category;
-    }
+        if ($name !== null) {
+            $fields[] = "name = :name";
+            $params[':name'] = $name;
+        }
+        if ($description !== null) {
+            $fields[] = "description = :description";
+            $params[':description'] = $description;
+        }
+        if ($price !== null) {
+            $fields[] = "price = :price";
+            $params[':price'] = $price;
+        }
+        if ($category !== null) {
+            $fields[] = "category = :category";
+            $params[':category'] = $category;
+        }
 
-    if (empty($fields)) {
-        return false; // No changes
-    }
+        if (empty($fields)) {
+            return false; // No changes
+        }
 
-    $sql = "UPDATE food_items SET " . implode(", ", $fields) . " WHERE id = :id";
-    $stmt = $this->conn->prepare($sql);
-    $params[':id'] = $id;
+        $sql = "UPDATE food_items SET " . implode(", ", $fields) . " WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $params[':id'] = $id;
 
     return $stmt->execute($params);
 }*/
@@ -256,14 +301,15 @@ public function updateItem($id, $name = null, $description = null, $price = null
 }
 
 
-public function createOrder($user_id, $bill_number, $items, $payment_method = 'wallet') {
-    $this->conn->beginTransaction();
-    try {
-        // Calculate total
-        $total_amount = 0;
-        foreach ($items as $item) {
-            $total_amount += $item['quantity'] * $item['price'];
-        }
+    public function createOrder($user_id, $bill_number, $items, $payment_method = 'wallet')
+    {
+        $this->conn->beginTransaction();
+        try {
+            // Calculate total
+            $total_amount = 0;
+            foreach ($items as $item) {
+                $total_amount += $item['quantity'] * $item['price'];
+            }
 
         // Insert into orders
         $stmt = $this->conn->prepare("
@@ -278,16 +324,16 @@ public function createOrder($user_id, $bill_number, $items, $payment_method = 'w
             INSERT INTO order_items (order_id, food_item_id, quantity, price)
             VALUES (?, ?, ?, ?)
         ");
-        foreach ($items as $item) {
-            $stmt->execute([$order_id, $item['food_item_id'], $item['quantity'], $item['price']]);
+            foreach ($items as $item) {
+                $stmt->execute([$order_id, $item['food_item_id'], $item['quantity'], $item['price']]);
+            }
+
+            $this->conn->commit();
+            return $order_id;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-
-        $this->conn->commit();
-        return $order_id;
-
-    } catch (Exception $e) {
-        $this->conn->rollback();
-        throw $e;
     }
 }
 
@@ -299,35 +345,44 @@ public function approveOrder($order_id, $admin_id) {
         $stmt->execute([$order_id]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Reduce stock
-        foreach ($items as $item) {
-            $stmt2 = $this->conn->prepare("
+    public function approveOrder($order_id, $admin_id)
+    {
+        $this->conn->beginTransaction();
+        try {
+            // Get all items for this order
+            $stmt = $this->conn->prepare("SELECT * FROM order_items WHERE order_id = ?");
+            $stmt->execute([$order_id]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Reduce stock
+            foreach ($items as $item) {
+                $stmt2 = $this->conn->prepare("
                 UPDATE food_items 
                 SET quantity_available = quantity_available - ? 
                 WHERE id = ? AND quantity_available >= ?
             ");
-            $stmt2->execute([$item['quantity'], $item['food_item_id'], $item['quantity']]);
-        }
+                $stmt2->execute([$item['quantity'], $item['food_item_id'], $item['quantity']]);
+            }
 
-        // Update payment_status to 'completed' or status to 'approved'
-        $stmt = $this->conn->prepare("
+            // Update payment_status to 'completed' or status to 'approved'
+            $stmt = $this->conn->prepare("
             UPDATE orders SET payment_status = 'completed' WHERE id = ?
         ");
-        $stmt->execute([$order_id]);
+            $stmt->execute([$order_id]);
 
-        $this->conn->commit();
-        return true;
-
-    } catch (Exception $e) {
-        $this->conn->rollback();
-        throw $e;
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
+        }
     }
-}
 
-public function rejectOrder($order_id, $admin_id) {
-    $stmt = $this->conn->prepare("UPDATE orders SET payment_status = 'failed' WHERE id = ?");
-    return $stmt->execute([$order_id]);
-}
+    public function rejectOrder($order_id, $admin_id)
+    {
+        $stmt = $this->conn->prepare("UPDATE orders SET payment_status = 'failed' WHERE id = ?");
+        return $stmt->execute([$order_id]);
+    }
 
 
 
@@ -363,4 +418,3 @@ public function getTodaysSpecial() {
 
 
 }
-?>

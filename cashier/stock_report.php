@@ -16,10 +16,25 @@ $end_date = $_GET['end_date'] ?? date('Y-m-d');
 // Get stock report data
 $stock_report = $order->getStockReport($start_date, $end_date);
 $daily_summary = $order->getDailySummary($start_date, $end_date);
+
+// Remove payment mode/method filters; only use group_by
+$group_by = isset($_GET['group_by']) ? $_GET['group_by'] : 'both';
+// Group by option: 'both' (mode+method), 'mode', 'method'
+$group_by = isset($_GET['group_by']) ? $_GET['group_by'] : 'both';
+
+// Payment method breakdown (apply filters if provided)
+$payment_report = $order->getPaymentMethodReport(
+    $start_date,
+    $end_date,
+    null,
+    null,
+    $group_by
+);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,6 +43,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
     <link href="../assets/css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-warning">
         <div class="container">
@@ -42,7 +58,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
 
     <div class="container mt-4">
         <h2><i class="fas fa-chart-line"></i> Stock & Sales Report</h2>
-        
+
         <!-- Date Range Filter -->
         <div class="card mb-4">
             <div class="card-body">
@@ -88,7 +104,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-table"></i> Item-wise Sales Report</h5>
                 <span class="badge bg-primary">
-                    <?php echo date('d/m/Y', strtotime($start_date)); ?> 
+                    <?php echo date('d/m/Y', strtotime($start_date)); ?>
                     <?php if ($start_date != $end_date): ?>
                         to <?php echo date('d/m/Y', strtotime($end_date)); ?>
                     <?php endif; ?>
@@ -113,10 +129,10 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php 
+                                <?php
                                 $total_quantity = 0;
                                 $total_revenue = 0;
-                                foreach ($stock_report as $item): 
+                                foreach ($stock_report as $item):
                                     $total_quantity += $item['total_quantity'];
                                     $total_revenue += $item['total_revenue'];
                                 ?>
@@ -158,6 +174,98 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
             </div>
         </div>
 
+        <!-- Payment Method Breakdown -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-credit-card"></i> Payment Method Breakdown</h5>
+                <span class="badge bg-primary">
+                    <?php echo date('d/m/Y', strtotime($start_date)); ?>
+                    <?php if ($start_date != $end_date): ?>
+                        to <?php echo date('d/m/Y', strtotime($end_date)); ?>
+                    <?php endif; ?>
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Group By select moved here -->
+                <form method="GET" class="mb-3">
+                    <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($start_date); ?>">
+                    <input type="hidden" name="end_date" value="<?php echo htmlspecialchars($end_date); ?>">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-auto">
+                            <label for="group_by" class="form-label mb-0">Group By</label>
+                        </div>
+                        <div class="col-auto">
+                            <select name="group_by" id="group_by" class="form-select">
+                                <option value="both" <?php echo ($group_by === 'both') ? 'selected' : ''; ?>>Mode + Method</option>
+                                <option value="mode" <?php echo ($group_by === 'mode') ? 'selected' : ''; ?>>Payment Mode</option>
+                                <option value="method" <?php echo ($group_by === 'method') ? 'selected' : ''; ?>>Payment Method</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Apply</button>
+                        </div>
+                    </div>
+                </form>
+                <?php if (empty($payment_report)): ?>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No payment data found for the selected date range.
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <?php if ($group_by === 'both'): ?>
+                                        <th>Payment Mode</th>
+                                        <th>Payment Method</th>
+                                    <?php elseif ($group_by === 'mode'): ?>
+                                        <th>Payment Mode</th>
+                                    <?php else: ?>
+                                        <th>Payment Method</th>
+                                    <?php endif; ?>
+                                    <th class="text-end">Orders Count</th>
+                                    <th class="text-end">Total Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $grand_orders = 0;
+                                $grand_total = 0.0;
+                                foreach ($payment_report as $row):
+                                    $grand_orders += (int)$row['orders_count'];
+                                    $grand_total += (float)$row['total_amount'];
+                                ?>
+                                    <tr>
+                                        <?php if ($group_by === 'both'): ?>
+                                            <td><?php echo htmlspecialchars(strtoupper($row['payment_mode'])); ?></td>
+                                            <td><?php echo htmlspecialchars(ucfirst(strtolower($row['payment_method']))); ?></td>
+                                        <?php elseif ($group_by === 'mode'): ?>
+                                            <td><?php echo htmlspecialchars(strtoupper($row['payment_mode'])); ?></td>
+                                        <?php else: ?>
+                                            <td><?php echo htmlspecialchars(ucfirst(strtolower($row['payment_method']))); ?></td>
+                                        <?php endif; ?>
+                                        <td class="text-end"><?php echo number_format($row['orders_count']); ?></td>
+                                        <td class="text-end">₹<?php echo number_format($row['total_amount'], 2); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-dark">
+                                    <?php if ($group_by === 'both'): ?>
+                                        <th colspan="2">Totals</th>
+                                    <?php else: ?>
+                                        <th>Totals</th>
+                                    <?php endif; ?>
+                                    <th class="text-end"><?php echo number_format($grand_orders); ?></th>
+                                    <th class="text-end">₹<?php echo number_format($grand_total, 2); ?></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Category-wise Breakdown -->
         <?php if (!empty($stock_report)): ?>
             <div class="card mt-4">
@@ -166,7 +274,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <?php 
+                        <?php
                         $category_stats = [];
                         foreach ($stock_report as $item) {
                             $category = $item['category'];
@@ -176,7 +284,7 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
                             $category_stats[$category]['quantity'] += $item['total_quantity'];
                             $category_stats[$category]['revenue'] += $item['total_revenue'];
                         }
-                        
+
                         foreach ($category_stats as $category => $stats):
                         ?>
                             <div class="col-md-3">
@@ -197,4 +305,5 @@ $daily_summary = $order->getDailySummary($start_date, $end_date);
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
