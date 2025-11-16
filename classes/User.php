@@ -211,6 +211,41 @@ public function register($roll_no, $email, $password) {
         return $stmt->fetch() ? true : false;
     }
 
+    public function deleteUser($id) {
+    $query = "DELETE FROM users WHERE id = :id";
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    return $stmt->execute();
+}
+
+public function createUser($roll_no, $email, $password, $role = 'user') {
+    $query = "INSERT INTO users (roll_no, email, password, role, created_at)
+              VALUES (:roll_no, :email, :password, :role, NOW())";
+
+    $stmt = $this->conn->prepare($query);
+
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+    $stmt->bindParam(':roll_no', $roll_no);
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':password', $hashedPassword);
+    $stmt->bindParam(':role', $role);
+
+    return $stmt->execute();
+}
+
+public function updateUser($id, $email, $role = 'user') {
+    $query = "UPDATE users SET email = :email, role = :role WHERE id = :id";
+    $stmt = $this->conn->prepare($query);
+
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':role', $role);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+
+    return $stmt->execute();
+}
+
+
     
     /* ================================================================
        🔐 FORGOT PASSWORD SYSTEM METHODS
