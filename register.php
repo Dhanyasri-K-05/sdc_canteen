@@ -43,6 +43,22 @@ if ($_POST && isset($_POST['register'])) {
     //elseif (!in_array($role, ['user', 'cashier', 'admin'])) {
     //     $error_message = "Please select a valid role";}
      else {
+         $domain = strtolower(substr(strrchr($email, "@"), 1));
+        $allowed_domains = ['gmail.com', 'psgitech.ac.in'];
+
+        if (!in_array($domain, $allowed_domains)) {
+            $error_message = "Only gmail.com and psgitech.ac.in email addresses are allowed.";
+        }
+    }
+
+
+
+
+
+
+
+ if (empty($error_message)) {
+
         try {
             $database = new Database();
             $db = $database->getConnection();

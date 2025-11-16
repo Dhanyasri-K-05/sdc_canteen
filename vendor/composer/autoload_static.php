@@ -24,6 +24,7 @@ class ComposerStaticInita775530a7d14372b0285f5d6fc77768d
         'P' => 
         array (
             'Picqer\\Barcode\\' => 15,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
         'A' => 
         array (
@@ -48,6 +49,10 @@ class ComposerStaticInita775530a7d14372b0285f5d6fc77768d
         array (
             0 => __DIR__ . '/..' . '/picqer/php-barcode-generator/src',
         ),
+        'PHPMailer\\PHPMailer\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
+        ),
         'App\\' => 
         array (
             0 => __DIR__ . '/../..' . '/classes',
@@ -56,6 +61,13 @@ class ComposerStaticInita775530a7d14372b0285f5d6fc77768d
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'PHPMailer\\PHPMailer\\DSNConfigurator' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/DSNConfigurator.php',
+        'PHPMailer\\PHPMailer\\Exception' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/Exception.php',
+        'PHPMailer\\PHPMailer\\OAuth' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuth.php',
+        'PHPMailer\\PHPMailer\\OAuthTokenProvider' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuthTokenProvider.php',
+        'PHPMailer\\PHPMailer\\PHPMailer' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/PHPMailer.php',
+        'PHPMailer\\PHPMailer\\POP3' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/POP3.php',
+        'PHPMailer\\PHPMailer\\SMTP' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/SMTP.php',
         'Picqer\\Barcode\\Barcode' => __DIR__ . '/..' . '/picqer/php-barcode-generator/src/Barcode.php',
         'Picqer\\Barcode\\BarcodeBar' => __DIR__ . '/..' . '/picqer/php-barcode-generator/src/BarcodeBar.php',
         'Picqer\\Barcode\\BarcodeGenerator' => __DIR__ . '/..' . '/picqer/php-barcode-generator/src/BarcodeGenerator.php',

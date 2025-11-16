@@ -210,5 +210,65 @@ public function register($roll_no, $email, $password) {
         $stmt->execute([$roll_no, $email]);
         return $stmt->fetch() ? true : false;
     }
+
+    
+    /* ================================================================
+       🔐 FORGOT PASSWORD SYSTEM METHODS
+       ================================================================ */
+
+    // ✅ Get user by email
+    public function getUserByEmail($email) {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // ✅ Store reset code + expiry
+    public function storeResetCode($email, $code, $expiry) {
+        $query = "UPDATE " . $this->table_name . " SET reset_code = :code, reset_code_expiry = :expiry WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':code', $code);
+        $stmt->bindParam(':expiry', $expiry);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+    }
+
+    // ✅ Verify reset code
+    public function verifyResetCode($email, $code) {
+        $query = "SELECT reset_code, reset_code_expiry FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($data && $data['reset_code'] == $code && strtotime($data['reset_code_expiry']) > time()) {
+            // clear code once verified
+            $clear = $this->conn->prepare("UPDATE " . $this->table_name . " SET reset_code = NULL, reset_code_expiry = NULL WHERE email = :email");
+            $clear->bindParam(':email', $email);
+            $clear->execute();
+            return true;
+        }
+        return false;
+    }
+
+    // ✅ Update password securely
+    public function updatePassword($email, $password) {
+        $hashed = password_hash($password, PASSWORD_BCRYPT);
+        $query = "UPDATE " . $this->table_name . " SET password = :password WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $hashed);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+    }
+
+
+
+
+
+
+
+
 }
 ?>

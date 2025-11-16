@@ -34,6 +34,27 @@ if ($_POST && isset($_POST['login'])) {
     if (empty($roll_no) || empty($password)) {
         $error_message = "Please fill in all fields";
     } else {
+            // 🔥 EMAIL DOMAIN VALIDATION (ONLY if input looks like email)
+        if (filter_var($roll_no, FILTER_VALIDATE_EMAIL)) {
+
+            // extract the domain
+            $domain = strtolower(substr(strrchr($roll_no, "@"), 1));
+
+            // allowed domains
+            $allowed_domains = ['gmail.com', 'psgitech.ac.in'];
+
+            // check domain validity
+            if (!in_array($domain, $allowed_domains)) {
+                $error_message = "Only gmail.com and psgitech.ac.in email addresses are allowed.";
+            }
+        }
+
+
+
+
+
+
+       if (empty($error_message)){
         try {
             $database = new Database();
             $db = $database->getConnection();
@@ -77,6 +98,8 @@ if ($_POST && isset($_POST['login'])) {
             $error_message = "Login failed: " . $e->getMessage();
         }
     }
+}
+
 }
 
 // Check for success message from registration
@@ -131,6 +154,11 @@ if (isset($_GET['registered']) && $_GET['registered'] == '1') {
                                     <i class="fas fa-sign-in-alt"></i> Login
                                 </button>
                             </div>
+
+                             <!-- Forgot Password -->
+                        <div class="text-center mb-3">
+                            <a href="forgot_password.php" class="text-decoration-none">Forgot Password?</a>
+                        </div>
                         </form>
                         
                         <hr>
