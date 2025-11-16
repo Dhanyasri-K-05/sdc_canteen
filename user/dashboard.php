@@ -236,6 +236,10 @@ if (!empty($_SESSION['cart'])) {
 
 // Get user's recent orders
 $recent_orders = $order->getUserOrders($_SESSION['user_id']);
+
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -474,6 +478,16 @@ $recent_orders = $order->getUserOrders($_SESSION['user_id']);
                         <?php endif; ?>
                     </div>
                 </div>
+
+                
+                 <?php
+                // Filter only orders created within the last 24 hours
+                $recent_orders = array_filter($recent_orders, function($order) {
+                    $created_at = strtotime($order['created_at']);
+                    $now = time();
+                    return ($now - $created_at) <= 86400;
+                });
+                ?>
 
                 <!-- Recent Orders -->
                 <div class="card mt-4">

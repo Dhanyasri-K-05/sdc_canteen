@@ -11,6 +11,7 @@ if ($_POST && isset($_POST['payment_method'])) {
     $db = $database->getConnection();
     $order = new Order($db);
     $user = new User($db);
+    $foodItem = new FoodItem($db);
     
     $cart = $_SESSION['cart'] ?? [];
     $payment_method = $_POST['payment_method'];
@@ -35,33 +36,101 @@ if ($_POST && isset($_POST['payment_method'])) {
                 header('Location: dashboard.php?error=insufficient_balance');
                 exit();
             }
+
+
+       // IMPORTANT: Check stock availability BEFORE starting transaction
+            foreach ($cart as $item) {
+                $currentStock = $foodItem->getItemById($item['id']);
+
+                if (!$currentStock) {
+                    header('Location: dashboard.php?error=item_not_found&item=' . urlencode($item['name']));
+                    exit();
+                }
+
+                if ($currentStock['quantity_available'] < $item['quantity']) {
+                    header('Location: dashboard.php?error=insufficient_stock&item=' . urlencode($item['name']) . '&available=' . $currentStock['quantity_available'] . '&requested=' . $item['quantity']);
+                    exit();
+                }
+            }
+
+
+
+
+
+
+
+
+
             
             // Process wallet payment
             $db->beginTransaction();
 
-        /*     // Check if all items in the cart have enough stock
-foreach ($cart as $item) {
-    $currentStock = $foodItem->getItemById($item['id']);
-    if ($currentStock['quantity_available'] < $item['quantity']) {
-        header('Location: dashboard.php?error=insufficient_stock');
-        exit();
-    }
-}
-
-if ($item['quantity_available'] < $item['quantity']) {
-    header('Location: dashboard.php?error=insufficient_stock');
-    exit();
-} */
-
-
+    
             
             // Create order
-            $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'wallet');
-            
-            // Add order items
+          $order_id = $order->createOrder($_SESSION['user_id'], $total_amount, 'wallet', $cart);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // Add order items and reduce stock
+            // Add order items and reduce stock
             foreach ($cart as $item) {
+                // FIRST: Lock and check current stock
+                $checkStmt = $db->prepare("SELECT quantity_available FROM food_items WHERE id = :id FOR UPDATE");
+                $checkStmt->bindValue(':id', $item['id'], PDO::PARAM_INT);
+                $checkStmt->execute();
+                $currentItem = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$currentItem) {
+                    throw new Exception("Item not found: " . $item['name']);
+                }
+
+                if ($currentItem['quantity_available'] < $item['quantity']) {
+                    throw new Exception("Insufficient stock for " . $item['name'] . ". Available: " . $currentItem['quantity_available'] . ", Requested: " . $item['quantity']);
+                }
+
+                // SECOND: Add to order
                 $order->addOrderItem($order_id, $item['id'], $item['quantity'], $item['price']);
+
+                // THIRD: Reduce stock from database
+                $updateStmt = $db->prepare("UPDATE food_items 
+                         SET quantity_available = quantity_available - :qty,
+                             updated_at = NOW()
+                         WHERE id = :id");
+                $updateStmt->bindValue(':qty', $item['quantity'], PDO::PARAM_INT);
+                $updateStmt->bindValue(':id', $item['id'], PDO::PARAM_INT);
+                $updateStmt->execute();
+
+                // Trigger WebSocket update for real-time stock sync
+
             }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             
             // Deduct from wallet
             $user->updateWalletBalance($_SESSION['user_id'], -$total_amount);
@@ -81,6 +150,15 @@ foreach ($cart as $item) {
             
             // Update order status
             $order->updatePaymentStatus($order_id, 'completed');
+
+
+            
+            if ($paymentStatus == 'completed') {
+    $order->completeOrder($order_id, $items);
+}
+
+                   
+
             
             // Update session wallet balance
             $_SESSION['wallet_balance'] = $user->getWalletBalance($_SESSION['user_id']);
@@ -94,6 +172,21 @@ foreach ($cart as $item) {
             exit();
             
         } elseif ($payment_method === 'razorpay') {
+
+                // Check stock availability before proceeding to Razorpay
+            foreach ($cart as $item) {
+                $currentStock = $foodItem->getItemById($item['id']);
+
+                if (!$currentStock) {
+                    header('Location: dashboard.php?error=item_not_found&item=' . urlencode($item['name']));
+                    exit();
+                }
+
+                if ($currentStock['quantity_available'] < $item['quantity']) {
+                    header('Location: dashboard.php?error=insufficient_stock&item=' . urlencode($item['name']) . '&available=' . $currentStock['quantity_available'] . '&requested=' . $item['quantity']);
+                    exit();
+                }
+            }
             // Store order details in session for Razorpay processing
             $_SESSION['pending_order'] = [
                 'cart' => $cart,

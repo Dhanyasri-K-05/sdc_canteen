@@ -8,15 +8,87 @@ class Order {
         $this->conn = $db;
     }
 
-    public function createOrder($user_id, $total_amount, $payment_method) {
-        $bill_number = 'BILL' . date('Ymd') . rand(1000, 9999);
-        
-        $query = "INSERT INTO " . $this->table_name . " (user_id, bill_number, total_amount, payment_method) VALUES (?, ?, ?, ?)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method]);
-        
-        return $this->conn->lastInsertId();
+    // UPDATED FUNCTION
+//     public function createOrder($user_id, $total_amount, $payment_method, $items_array) {
+//     $bill_number = 'BILL' . date('Ymd') . rand(1000, 9999);
+
+//     // Convert array to JSON
+//     $items_json = json_encode($items_array);
+
+//     $query = "INSERT INTO " . $this->table_name . " (user_id, bill_number, total_amount, payment_method, items)
+//               VALUES (?, ?, ?, ?, ?)";
+
+//     $stmt = $this->conn->prepare($query);
+//     $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method, $items_json]);
+
+//     return $this->conn->lastInsertId();
+// }
+
+    public function createOrder($user_id, $total_amount, $payment_method,$items_array) {
+
+    // 🔹 File to store daily counter
+    $counter_file = __DIR__ . '/bill_counter.json';
+    $today = date('Ymd');
+
+    // 🔹 Load or initialize counter data
+    if (file_exists($counter_file)) {
+        $data = json_decode(file_get_contents($counter_file), true);
+        if ($data['date'] !== $today) {
+            $data['date'] = $today;
+            $data['counter'] = 1;
+        } else {
+            $data['counter']++;
+        }
+    } else {
+        $data = ['date' => $today, 'counter' => 1];
     }
+
+    // 🔹 Save updated counter
+    file_put_contents($counter_file, json_encode($data));
+
+    // 🔹 Format counter as 5-digit number
+    $formatted_counter = str_pad($data['counter'], 5, '0', STR_PAD_LEFT);
+
+    // 🔹 Generate the bill number (example: BILL2025111000001)
+    $bill_number = 'C1' . $today . $formatted_counter;
+
+    
+   // Convert array to JSON
+     $items_json = json_encode($items_array);
+
+    // 🔹 Insert order record
+    $query = "INSERT INTO " . $this->table_name . " (user_id, bill_number, total_amount, payment_method,items) 
+              VALUES (?, ?, ?, ?,?)";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method,$items_json]);
+
+    // 🔹 Return last inserted ID or bill number
+    return $this->conn->lastInsertId();
+        
+}
+
+
+public function completeOrder($order_id, $items) {
+    // 🔹 Update payment status
+    $query = "UPDATE orders SET payment_status = 'completed' WHERE id = ?";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$order_id]);
+
+    // 🔹 Insert each ordered item into orders_stock
+    $query_stock = "INSERT INTO orders_stock (order_id, food_item, quantity, price) VALUES (?, ?, ?, ?)";
+    $stmt_stock = $this->conn->prepare($query_stock);
+
+    foreach ($items as $item) {
+        // Expected $item = ['food_item' => 'Dosa', 'quantity' => 2, 'price' => 50.00];
+        $stmt_stock->execute([$order_id, $item['food_item'], $item['quantity'], $item['price']]);
+    }
+
+    return true;
+}
+
+
+
+
 
     public function addOrderItem($order_id, $food_item_id, $quantity, $price) {
         $query = "INSERT INTO " . $this->items_table . " (order_id, food_item_id, quantity, price) VALUES (?, ?, ?, ?)";
@@ -233,5 +305,26 @@ class Order {
         $stmt->execute([$start_date, $end_date]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+
+
+    public function getTopSellingItems($limit = 5) {
+    $query = "SELECT 
+                fi.name AS food_name,
+                SUM(oi.quantity) AS total_sold
+              FROM " . $this->items_table . " oi
+              JOIN food_items fi ON oi.food_item_id = fi.id
+              JOIN " . $this->table_name . " o ON oi.order_id = o.id
+              WHERE o.payment_status = 'completed'
+              GROUP BY fi.id, fi.name
+              ORDER BY total_sold DESC
+              LIMIT :limit";
+
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 }
 ?>
