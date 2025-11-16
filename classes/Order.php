@@ -132,14 +132,16 @@ public function completeOrder($order_id, $items) {
     }
 
     public function getRecentOrders($limit = 10) {
-        $limit = (int)$limit;
-        $query = "SELECT o.*, u.roll_no FROM " . $this->table_name . " o 
-                  JOIN users u ON o.user_id = u.id 
-                  ORDER BY o.created_at DESC LIMIT $limit";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $limit = (int)$limit; // Always sanitize
+    $query = "SELECT o.*, u.roll_no FROM " . $this->table_name . " o 
+              JOIN users u ON o.user_id = u.id 
+              ORDER BY o.created_at DESC LIMIT $limit";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function getTotalOrders() {
         $query = "SELECT COUNT(*) as count FROM " . $this->table_name;
@@ -159,14 +161,14 @@ public function completeOrder($order_id, $items) {
 
     public function getTodayStats() {
         $today = date('Y-m-d');
-
+        
         $query = "SELECT 
                     COUNT(*) as orders,
                     COALESCE(SUM(total_amount), 0) as revenue,
                     COALESCE(SUM((SELECT SUM(quantity) FROM " . $this->items_table . " WHERE order_id = o.id)), 0) as items
                   FROM " . $this->table_name . " o 
                   WHERE DATE(created_at) = ? AND payment_status = 'completed'";
-
+        
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$today]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -175,7 +177,7 @@ public function completeOrder($order_id, $items) {
     public function getStockReport($start_date = null, $end_date = null) {
         if (!$start_date) $start_date = date('Y-m-d');
         if (!$end_date) $end_date = date('Y-m-d');
-
+        
         $query = "SELECT 
                     fi.name,
                     fi.category,
@@ -190,96 +192,101 @@ public function completeOrder($order_id, $items) {
                     AND o.payment_status = 'completed'
                   GROUP BY fi.id, fi.name, fi.category, fi.price
                   ORDER BY total_revenue DESC";
-
+        
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$start_date, $end_date]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getDailySummary($start_date, $end_date) {
-        $query = "SELECT 
-                    DATE(o.created_at) as date,
-                    COUNT(*) as total_orders,
-                    SUM(o.total_amount) as total_revenue,
-                    SUM(oi.quantity) as total_items
-                  FROM " . $this->table_name . " o
-                  JOIN " . $this->items_table . " oi ON oi.order_id = o.id
-                  WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
-                  GROUP BY DATE(o.created_at)
-                  ORDER BY date DESC";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$start_date, $end_date]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT 
+                DATE(o.created_at) as date,
+                COUNT(*) as total_orders,
+                SUM(o.total_amount) as total_revenue,
+                SUM(oi.quantity) as total_items
+              FROM " . $this->table_name . " o
+              JOIN " . $this->items_table . " oi ON oi.order_id = o.id
+              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
+              GROUP BY DATE(o.created_at)
+              ORDER BY date DESC";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$start_date, $end_date]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function getDailyReport($start_date, $end_date) {
-        $query = "SELECT 
-                    DATE(o.created_at) as date,
-                    COUNT(*) as total_orders,
-                    SUM(o.total_amount) as total_revenue,
-                    SUM(oi.quantity) as total_items
-                  FROM " . $this->table_name . " o
-                  JOIN " . $this->items_table . " oi ON oi.order_id = o.id
-                  WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
-                  GROUP BY DATE(o.created_at)
-                  ORDER BY date";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$start_date, $end_date]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT 
+                DATE(o.created_at) as date,
+                COUNT(*) as total_orders,
+                SUM(o.total_amount) as total_revenue,
+                SUM(oi.quantity) as total_items
+              FROM " . $this->table_name . " o
+              JOIN " . $this->items_table . " oi ON oi.order_id = o.id
+              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
+              GROUP BY DATE(o.created_at)
+              ORDER BY date";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$start_date, $end_date]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function getWeeklyReport($start_date, $end_date) {
-        $query = "SELECT 
-                    CONCAT(YEAR(o.created_at), '-W', LPAD(WEEK(o.created_at), 2, '0')) as week,
-                    COUNT(*) as total_orders,
-                    SUM(o.total_amount) as total_revenue,
-                    SUM(oi.quantity) as total_items
-                  FROM " . $this->table_name . " o
-                  JOIN " . $this->items_table . " oi ON oi.order_id = o.id
-                  WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
-                  GROUP BY YEAR(o.created_at), WEEK(o.created_at)
-                  ORDER BY YEAR(o.created_at), WEEK(o.created_at)";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$start_date, $end_date]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT 
+                CONCAT(YEAR(o.created_at), '-W', LPAD(WEEK(o.created_at), 2, '0')) as week,
+                COUNT(*) as total_orders,
+                SUM(o.total_amount) as total_revenue,
+                SUM(oi.quantity) as total_items
+              FROM " . $this->table_name . " o
+              JOIN " . $this->items_table . " oi ON oi.order_id = o.id
+              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
+              GROUP BY YEAR(o.created_at), WEEK(o.created_at)
+              ORDER BY YEAR(o.created_at), WEEK(o.created_at)";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$start_date, $end_date]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function getMonthlyReport($start_date, $end_date) {
-        $query = "SELECT 
-                    DATE_FORMAT(o.created_at, '%Y-%m') as month,
-                    COUNT(*) as total_orders,
-                    SUM(o.total_amount) as total_revenue,
-                    SUM(oi.quantity) as total_items
-                  FROM " . $this->table_name . " o
-                  JOIN " . $this->items_table . " oi ON oi.order_id = o.id
-                  WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
-                  GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
-                  ORDER BY DATE_FORMAT(o.created_at, '%Y-%m')";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$start_date, $end_date]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT 
+                DATE_FORMAT(o.created_at, '%Y-%m') as month,
+                COUNT(*) as total_orders,
+                SUM(o.total_amount) as total_revenue,
+                SUM(oi.quantity) as total_items
+              FROM " . $this->table_name . " o
+              JOIN " . $this->items_table . " oi ON oi.order_id = o.id
+              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
+              GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
+              ORDER BY DATE_FORMAT(o.created_at, '%Y-%m')";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$start_date, $end_date]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function getYearlyReport($start_date, $end_date) {
-        $query = "SELECT 
-                    YEAR(o.created_at) as year,
-                    COUNT(*) as total_orders,
-                    SUM(o.total_amount) as total_revenue,
-                    SUM(oi.quantity) as total_items
-                  FROM " . $this->table_name . " o
-                  JOIN " . $this->items_table . " oi ON oi.order_id = o.id
-                  WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
-                  GROUP BY YEAR(o.created_at)
-                  ORDER BY YEAR(o.created_at)";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$start_date, $end_date]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT 
+                YEAR(o.created_at) as year,
+                COUNT(*) as total_orders,
+                SUM(o.total_amount) as total_revenue,
+                SUM(oi.quantity) as total_items
+              FROM " . $this->table_name . " o
+              JOIN " . $this->items_table . " oi ON oi.order_id = o.id
+              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
+              GROUP BY YEAR(o.created_at)
+              ORDER BY YEAR(o.created_at)";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$start_date, $end_date]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function getItemSalesReport($start_date, $end_date) {
         $query = "SELECT 
@@ -293,7 +300,7 @@ public function completeOrder($order_id, $items) {
                   WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.payment_status = 'completed'
                   GROUP BY fi.id, fi.name, fi.category
                   ORDER BY total_revenue DESC";
-
+        
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$start_date, $end_date]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

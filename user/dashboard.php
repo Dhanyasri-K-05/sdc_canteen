@@ -3,8 +3,6 @@ require_once '../config/session.php';
 require_once(__DIR__ . '/../config/database.php');
 require_once '../classes/FoodItem.php';
 require_once '../classes/Order.php';
-require_once '../classes/User.php';
-
 
  //$timeout_duration = 60;
 
@@ -37,7 +35,6 @@ $database = new Database();
 $db = $database->getConnection();
 $foodItem = new FoodItem($db);
 $order = new Order($db);
-$userObj = new User($db); 
 date_default_timezone_set('Asia/Kolkata');
 // Get current time and available food items
 $current_time = date('H:i');
@@ -49,19 +46,6 @@ $items_by_category = [];
 foreach ($available_items as $item) {
     $items_by_category[$item['category']][] = $item;
 }
-
- $query = "SELECT wallet_balance FROM users WHERE id = ?";
-$stmt = $db->prepare($query);
-$stmt->execute([$_SESSION['user_id']]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($user && isset($user['wallet_balance'])) {
-    $_SESSION['wallet_balance'] = floatval($userObj->decryptBalance($user['wallet_balance']));
-} else {
-    $_SESSION['wallet_balance'] = 0.00;
-}
- 
-
 
 // Handle add to cart
 // if ($_POST && isset($_POST['add_to_cart'])) {

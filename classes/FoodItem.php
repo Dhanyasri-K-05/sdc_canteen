@@ -265,22 +265,15 @@ public function createOrder($user_id, $bill_number, $items, $payment_method = 'w
             $total_amount += $item['quantity'] * $item['price'];
         }
 
-        // Convert items to JSON dictionary: foodname => qty
-        $items_array = [];
-        foreach ($items as $item) {
-            $items_array[$item['food_item_name']] = $item['quantity']; 
-        }
-        $items_json = json_encode($items_array);
-
-        // Insert into orders (now including items JSON)
+        // Insert into orders
         $stmt = $this->conn->prepare("
-            INSERT INTO orders (user_id, bill_number, total_amount, payment_method, items)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO orders (user_id, bill_number, total_amount, payment_method)
+            VALUES (?, ?, ?, ?)
         ");
-        $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method, $items_json]);
+        $stmt->execute([$user_id, $bill_number, $total_amount, $payment_method]);
         $order_id = $this->conn->lastInsertId();
 
-        // Insert each item to order_items table
+        // Insert each item
         $stmt = $this->conn->prepare("
             INSERT INTO order_items (order_id, food_item_id, quantity, price)
             VALUES (?, ?, ?, ?)
@@ -297,7 +290,6 @@ public function createOrder($user_id, $bill_number, $items, $payment_method = 'w
         throw $e;
     }
 }
-
 
 public function approveOrder($order_id, $admin_id) {
     $this->conn->beginTransaction();
@@ -338,33 +330,7 @@ public function rejectOrder($order_id, $admin_id) {
 }
 
 
-      public function reduceStockByName($name, $quantity) {
-        $query = "UPDATE {$this->table_name} 
-                  SET quantity_available = quantity_available - :quantity 
-                  WHERE food_name = :name AND quantity_available >= :quantity";
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':quantity', $quantity);
-        $stmt->bindParam(':name', $name);
-        
-        if ($stmt->execute()) {
-            if ($stmt->rowCount() === 0) {
-                throw new Exception("Insufficient stock or invalid item: $name");
-            }
-            return true;
-        }
-        throw new Exception("Failed to update stock for item: $name");
-    }
-
-
-
-    public function getItemByName($name) {
-    $query = "SELECT * FROM {$this->table_name} WHERE name = :name LIMIT 1";
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(':name', $name);
-    $stmt->execute();
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
 
 
 public function updateTodaysSpecial($food_name) {

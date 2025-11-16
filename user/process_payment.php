@@ -3,8 +3,6 @@ require_once '../config/session.php';
 require_once(__DIR__ . '/../config/database.php');
 require_once '../classes/Order.php';
 require_once '../classes/User.php';
-require_once '../classes/FoodItem.php';
-
 
 requireRole('user','staff');
 
@@ -137,7 +135,12 @@ if ($_POST && isset($_POST['payment_method'])) {
             // Deduct from wallet
             $user->updateWalletBalance($_SESSION['user_id'], -$total_amount);
 
-     
+          /*   // Deduct stock for each item
+foreach ($cart as $item) {
+    $foodItem->reduceStock($item['id'], $item['quantity']); 
+    // reduceStock should execute:
+    // UPDATE food_items SET quantity_available = quantity_available - ? WHERE id = ?
+} */
 
             
             // Record wallet transaction
