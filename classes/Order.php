@@ -302,22 +302,37 @@ public function completeOrder($order_id, $items) {
 
 
     public function getTopSellingItems($limit = 5) {
-    $query = "SELECT 
-                fi.name AS food_name,
-                SUM(oi.quantity) AS total_sold
-              FROM " . $this->items_table . " oi
-              JOIN food_items fi ON oi.food_item_id = fi.id
-              JOIN " . $this->table_name . " o ON oi.order_id = o.id
-              WHERE o.payment_status = 'completed'
-              GROUP BY fi.id, fi.name
-              ORDER BY total_sold DESC
-              LIMIT :limit";
+        $query = "SELECT 
+                    fi.name AS food_name,
+                    SUM(oi.quantity) AS total_sold
+                FROM " . $this->items_table . " oi
+                JOIN food_items fi ON oi.food_item_id = fi.id
+                JOIN " . $this->table_name . " o ON oi.order_id = o.id
+                WHERE o.payment_status = 'completed'
+                GROUP BY fi.id, fi.name
+                ORDER BY total_sold DESC
+                LIMIT :limit";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+  public function getOrderByBillId($bill_id) {
+    $query = "SELECT o.*, u.roll_no 
+              FROM " . $this->table_name . " o
+              LEFT JOIN users u ON o.user_id = u.id
+              WHERE o.bill_number = ?
+              LIMIT 1";
 
     $stmt = $this->conn->prepare($query);
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute([$bill_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
+public function getOrderItemsFromJson($json_items) {
+    return json_decode($json_items, true);
+}
+
 
 }
 ?>

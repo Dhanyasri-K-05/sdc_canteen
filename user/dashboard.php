@@ -288,7 +288,42 @@ if ($special && isset($special['name']) && $special['name'] !== 'no_items') {
 
 
 
-  $topItems = $order->getTopSellingItems(5);
+  $topItems = $order->getTopSellingItems(5);$foodItem = new FoodItem($db);
+
+// SEARCH BAR HANDLING
+
+    $current_time = date('H:i');
+    $searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+    if ($searchQuery !== '') {
+        // Show ONLY search results
+        $available_items = $foodItem->searchItems($searchQuery);
+
+        // Group search results by category (optional)
+        $items_by_category = [];
+        foreach ($available_items as $item) {
+            $items_by_category[$item['category']][] = $item;
+        }
+
+        $search_mode = true;
+
+    } else {
+        // Default: Load items based on current time
+        $available_items = $foodItem->getAvailableItemsByTime($current_time);
+
+        // Group items by category
+        $items_by_category = [];
+        foreach ($available_items as $item) {
+            $items_by_category[$item['category']][] = $item;
+        }
+
+        $search_mode = false;
+    }
+
+
+
+
+
 
 
 ?>
@@ -490,100 +525,118 @@ if ($special && isset($special['name']) && $special['name'] !== 'no_items') {
         
 
         <div class="row">
-            <!-- Menu Section -->
-            <div class="col-md-8">
-                <!-- <div class="current-time mb-4">
-                    <h5><i class="fas fa-clock"></i> Current Time: <?php echo date('H:i'); ?> - Showing: <?php echo ucfirst($current_category); ?> Menu</h5>
-                </div> -->
+    <!-- Menu Section -->
+    <div class="col-md-8">
 
-                <?php if (empty($available_items)): ?>
-                    <div class="alert alert-info">
-                        <h5>No items available at this time</h5>
-                        <p>Please check back during our service hours:</p>
-                        <ul>
-                            <li>Breakfast: 06:00 - 11:00</li>
-                            <li>Lunch: 12:00 - 16:00</li>
-                            <li>Snacks: 16:00 - 19:00</li>
-                            <li>Beverages: 06:00 - 22:00</li>
-                        </ul>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($items_by_category as $category => $items): ?>
-                        <div class="category-section mb-4">
-                            <h4 class="text-capitalize mb-3">
-                                <i class="fas fa-utensils"></i> <?php echo $category; ?>
-                            </h4>
-                            <div class="row">
-                             <!--    ?php foreach ($items as $item): ?>
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card h-100">
-                                            <div class="card-body">
-                                                <h5 class="card-title">?php echo $item['name']; ?></h5>
-                                                <p class="card-text">?php echo $item['description']; ?></p>
-                                                <p class="card-text">
-                                                    <strong>Price: ₹?php echo number_format($item['price'], 2); ?></strong>
-                                                </p>
-                                                <p class="card-text">
-                                                    <small class="text-muted">Available: ?php echo $item['time_available']; ?></small>
-                                                </p>
-                                                <form method="POST" class="d-flex align-items-center">
-                                                    <input type="hidden" name="item_id" value="?php echo $item['id']; ?>">
-                                                    <input type="number" name="quantity" value="1" min="1" max="10" class="form-control me-2" style="width: 80px;">
-                                                    <button type="submit" name="add_to_cart" class="btn btn-primary">
-                                                        <i class="fas fa-cart-plus"></i> Add
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ?php endforeach; ?> -->
+        <!-- Search Bar -->
+        <form method="GET" action="" class="mb-3">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control"
+                    placeholder="Search food items..."
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <button class="btn btn-primary">Search</button>
+            </div>
+        </form>
 
+        <?php if ($search_mode): ?>
+            <!-- ============================= -->
+            <!--    SEARCH RESULTS DISPLAY     -->
+            <!-- ============================= -->
+            <h4 class="mt-4">Search Results</h4>
 
+            <?php if (empty($available_items)): ?>
+                <p>No items found.</p>
+            <?php else: ?>
+                <div class="row">
+                    <?php foreach ($available_items as $item): ?>
+                        <?php $is_available = $item['quantity_available'] > 0; ?>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5><?php echo $item['name']; ?></h5>
+                                    <p><?php echo $item['description']; ?></p>
+                                    <p><strong>₹<?php echo number_format($item['price'], 2); ?></strong></p>
 
-<?php foreach ($items as $item): ?>
-                                    <?php $is_available = $item['quantity_available'] > 0; ?>
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card h-100 item-card" data-item-id="<?php echo $item['id']; ?>"
-                                            id="item-card-<?php echo $item['id']; ?>">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                                    <h5 class="card-title"><?php echo htmlspecialchars($item['name']); ?></h5>
-                                                    <span class="badge bg-info stock-badge" id="stock-badge-<?php echo $item['id']; ?>">
-                                                        Stock: <span id="stock-qty-<?php echo $item['id']; ?>"><?php echo $item['quantity_available']; ?></span>
-                                                    </span>
-                                                </div>
-                                                <p class="card-text"><?php echo htmlspecialchars($item['description']); ?></p>
-                                                <p class="card-text">
-                                                    <strong>Price: ₹<?php echo number_format($item['price'], 2); ?></strong>
-                                                </p>
-
-                                                <form method="POST" class="d-flex align-items-center item-form-<?php echo $item['id']; ?>"
-                                                    style="<?php echo !$is_available ? 'display: none !important;' : ''; ?>">
-                                                    <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                                    <input type="number" name="quantity" value="1" min="1"
-                                                        max="<?php echo $item['quantity_available']; ?>"
-                                                        class="form-control me-2" style="width: 80px;"
-                                                        id="qty-input-<?php echo $item['id']; ?>"
-                                                        oninput="if(this.value > this.max) this.value = this.max; if(this.value < this.min) this.value = this.min;">
-                                                    <button type="submit" name="add_to_cart" class="btn btn-primary">
-                                                        <i class="fas fa-cart-plus"></i> Add
-                                                    </button>
-                                                </form>
-
-                                                <div class="alert alert-danger mt-2 out-of-stock-msg"
-                                                    id="oos-msg-<?php echo $item['id']; ?>"
-                                                    style="<?php echo $is_available ? 'display: none;' : ''; ?>">
-                                                    Out of Stock
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
+                                    <?php if ($is_available): ?>
+                                        <form method="POST" class="d-flex align-items-center">
+                                            <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                            <input type="number" name="quantity" value="1" min="1"
+                                                max="<?php echo $item['quantity_available']; ?>"
+                                                class="form-control me-2" style="width: 80px;">
+                                            <button type="submit" name="add_to_cart" class="btn btn-primary">
+                                                <i class="fas fa-cart-plus"></i> Add
+                                            </button>
+                                        </form>
+                                    <?php else: ?>
+                                        <div class="alert alert-danger mt-2">Out of Stock</div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
+
+        <?php else: ?>
+            <!-- ============================= -->
+            <!--     NORMAL MENU DISPLAY      -->
+            <!-- ============================= -->
+
+            <?php if (empty($available_items)): ?>
+                <div class="alert alert-info">
+                    <h5>No items available at this time</h5>
+                    <p>Please check back during our service hours:</p>
+                    <ul>
+                        <li>Breakfast: 06:00 - 11:00</li>
+                        <li>Lunch: 12:00 - 16:00</li>
+                        <li>Snacks: 16:00 - 19:00</li>
+                        <li>Beverages: 06:00 - 22:00</li>
+                    </ul>
+                </div>
+            <?php else: ?>
+
+                <?php foreach ($items_by_category as $category => $items): ?>
+                    <div class="category-section mb-4">
+                        <h4 class="text-capitalize mb-3">
+                            <i class="fas fa-utensils"></i> <?php echo $category; ?>
+                        </h4>
+
+                        <div class="row">
+                            <?php foreach ($items as $item): ?>
+                                <?php $is_available = $item['quantity_available'] > 0; ?>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100 item-card" data-item-id="<?php echo $item['id']; ?>">
+                                        <div class="card-body">
+                                            <h5><?php echo htmlspecialchars($item['name']); ?></h5>
+                                            <p><?php echo htmlspecialchars($item['description']); ?></p>
+                                            <p><strong>₹<?php echo number_format($item['price'], 2); ?></strong></p>
+
+                                            <?php if ($is_available): ?>
+                                                <form method="POST" class="d-flex align-items-center">
+                                                    <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                                    <input type="number" name="quantity" value="1" min="1"
+                                                        max="<?php echo $item['quantity_available']; ?>"
+                                                        class="form-control me-2" style="width: 80px;">
+                                                    <button type="submit" name="add_to_cart" class="btn btn-primary">
+                                                        <i class="fas fa-cart-plus"></i> Add
+                                                    </button>
+                                                </form>
+                                            <?php else: ?>
+                                                <div class="alert alert-danger mt-2">Out of Stock</div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
+
 
 
 
@@ -683,16 +736,23 @@ if ($special && isset($special['name']) && $special['name'] !== 'no_items') {
                             <?php foreach (array_slice($recent_orders, 0, 5) as $recent_order): ?>
                                 <div class="mb-2">
                                     <small>
-                                        <strong><?php echo $recent_order['bill_number']; ?></strong><br>
+
+                                        <a href="order_success.php?order_id=<?php echo $recent_order['id']; ?>" 
+                                        class="text-decoration-none">
+                                            <strong><?php echo $recent_order['bill_number']; ?></strong>
+                                        </a><br>
+
                                         ₹<?php echo number_format($recent_order['total_amount'], 2); ?> - 
                                         <span class="badge bg-<?php echo $recent_order['payment_status'] == 'completed' ? 'success' : 'warning'; ?>">
                                             <?php echo ucfirst($recent_order['payment_status']); ?>
                                         </span><br>
+
                                         <?php echo date('d/m/Y H:i', strtotime($recent_order['created_at'])); ?>
                                     </small>
                                 </div>
                                 <hr>
                             <?php endforeach; ?>
+
                         <?php endif; ?>
                     </div>
                 </div>

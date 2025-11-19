@@ -384,15 +384,19 @@ public function getTodaysSpecial() {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+public function searchItems($keyword)
+{
+    $query = "SELECT * FROM " . $this->table_name . " 
+              WHERE is_active = 1
+              AND name LIKE :keyword
+              ORDER BY name";
 
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindValue(':keyword', "%$keyword%");
+    $stmt->execute();
 
-
-
-
-
-
-
-
+    return $stmt;
+}
 
 
 

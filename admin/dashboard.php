@@ -25,6 +25,27 @@ $stats = [
 
 // Get recent orders
 $recent_orders = $order->getRecentOrders(10);
+// Admin search for Bill ID
+// Admin search for Bill ID
+$searchBillId = isset($_GET['bill_id']) ? trim($_GET['bill_id']) : '';
+
+$searched_order = null;
+$searched_items = [];
+
+if ($searchBillId !== '') {
+
+    // Get order main details
+    $searched_order = $order->getOrderByBillId($searchBillId);
+
+    if ($searched_order) {
+        // Decode JSON items
+        $searched_items = json_decode($searched_order['items'], true);
+
+    }
+}
+
+
+
 
 // Get pending approvals
 $pending_approvals = $foodItem->getPendingApprovals();
@@ -215,6 +236,62 @@ if ($_POST && isset($_POST['action']) && isset($_POST['approval_id'])) {
                 </div>
             </div>
         </div>
+
+        <div class="card mb-4">
+            <!--search bar -->
+            <div class="card-header">
+                <h5><i class="fas fa-search"></i> Search Order by Bill ID</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="">
+                    <div class="input-group">
+                        <input type="text" name="bill_id" class="form-control" 
+                            placeholder="Enter Bill ID"
+                            value="<?php echo isset($_GET['bill_id']) ? $_GET['bill_id'] : ''; ?>">
+                        <button class="btn btn-primary">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php if (isset($_GET['bill_id'])): ?>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-invoice"></i> Search Result</h5>
+                </div>
+                <div class="card-body">
+
+                    <?php if ($searched_order): ?>
+                        <p><strong>Bill ID:</strong> <?php echo $searched_order['bill_number']; ?></p>
+                        <p><strong>Roll No:</strong> <?php echo $searched_order['roll_no']; ?></p>
+                        <p><strong>Total Amount:</strong> ₹<?php echo $searched_order['total_amount']; ?></p>
+                        <p><strong>Date:</strong> <?php echo $searched_order['created_at']; ?></p>
+
+                        <h6 class="mt-3">Items:</h6>
+                        <ul class="list-group">
+                            <?php foreach ($searched_items as $itemName => $itemData): ?>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($itemName); ?></strong>
+                                        <span class="text-muted"> | Rate: ₹<?php echo $itemData['rate']; ?></span>
+                                    </div>
+
+                                    <div>
+                                        Qty: <?php echo $itemData['quantity']; ?> |
+                                        ₹<?php echo $itemData['total']; ?>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+
+                        </ul>
+
+                    <?php else: ?>
+                        <p class="text-danger">No order found for Bill ID: <?php echo htmlspecialchars($_GET['bill_id']); ?></p>
+                    <?php endif; ?>
+
+                </div>
+            </div>
+        <?php endif; ?>
+
 
         <div class="row">
     <!-- Pending Approvals -->
